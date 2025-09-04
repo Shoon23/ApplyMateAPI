@@ -11,13 +11,9 @@ const userRepo = new UserRepository();
 const authService = new AuthService(userRepo);
 const authController = new AuthController(authService);
 
+authRouter.post("/login", validate(LoginSchema), authController.handleLogin);
 authRouter.post(
-  "/auth/login",
-  validate(LoginSchema),
-  authController.handleLogin
-);
-authRouter.post(
-  "/auth/register",
+  "/register",
   validate(RegisterSchema),
   authController.handleRegister
 );
