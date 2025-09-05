@@ -2,8 +2,9 @@ import { Router } from "express";
 import JobRepository from "../../repository/JobRepository";
 import JobService from "../../services/JobService";
 import JobController from "../../controllers/JobController";
-import { validate } from "../../middlewares/validate";
-import { JobApplicationSchema } from "../../schema/jobSchema";
+import { validateReqBody } from "../../middlewares/validateReqBody";
+import { JobApplicationID, JobApplicationSchema } from "../../schema/jobSchema";
+import { validateReqParam } from "../../middlewares/validateReqParam";
 
 const jobRoutes = Router();
 
@@ -14,12 +15,16 @@ const jobController = new JobController(jobService);
 jobRoutes.get("/", (req, res) => {});
 
 // GET /jobs/:id → get one job by id
-jobRoutes.get("/:id", (req, res) => {});
+jobRoutes.get(
+  "/:id",
+  validateReqParam(JobApplicationID),
+  jobController.handleGetJob
+);
 
 // POST /jobs → create a job
 jobRoutes.post(
   "/",
-  validate(JobApplicationSchema),
+  validateReqBody(JobApplicationSchema),
   jobController.handleCreateJob
 );
 

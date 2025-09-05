@@ -5,7 +5,7 @@ class DatabaseError extends CustomError {
   errorType = "DATABASE_ERROR";
   originalError: Error;
 
-  constructor(error: Error) {
+  constructor(error: Error, public message: string) {
     super(error.message);
     this.originalError = error;
 
@@ -15,18 +15,17 @@ class DatabaseError extends CustomError {
   serializeErrors(): { message: string; property?: string }[] {
     return [
       {
-        message:
-          "Something went wrong with our database. Please try again later.",
+        message: this.message,
       },
     ];
   }
-  getDebugInfo() {
-    return {
-      errorType: this.errorType,
-      originalMessage: this.originalError.message,
-      stack: this.originalError.stack,
-    };
-  }
+  // getDebugInfo() {
+  //   return {
+  //     errorType: this.errorType,
+  //     originalMessage: this.originalError.message,
+  //     stack: this.originalError.stack,
+  //   };
+  // }
 }
 
 export default DatabaseError;

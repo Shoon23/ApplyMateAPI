@@ -3,7 +3,7 @@ import logger from "../utils/logger";
 import ValidationError from "../errors/ValidationError";
 import Joi from "joi";
 
-export const validate = (schema: Joi.ObjectSchema) => {
+export const validateReqBody = (schema: Joi.ObjectSchema) => {
   return (req: Request, res: Response, next: NextFunction) => {
     const { error, value } = schema.validate(req.body, { abortEarly: false });
     if (error) {

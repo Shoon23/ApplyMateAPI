@@ -46,6 +46,13 @@ export const JobApplicationSchema = Joi.object({
       "string.email": "Invalid contact email",
     }),
 });
+
+export const JobApplicationID = Joi.object({
+  id: Joi.string().required().messages({
+    "string.empty": "Job ID is required",
+    "any.required": "Job ID is required",
+  }),
+});
 export type JobApplicationType = {
   company: string;
   position: string;

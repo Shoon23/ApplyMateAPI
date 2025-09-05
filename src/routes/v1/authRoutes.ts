@@ -2,7 +2,7 @@ import { Router } from "express";
 import AuthController from "../../controllers/AuthController";
 import AuthService from "../../services/AuthService";
 import UserRepository from "../../repository/UserRepository";
-import { validate } from "../../middlewares/validate";
+import { validateReqBody } from "../../middlewares/validateReqBody";
 import { LoginSchema, RegisterSchema } from "../../schema/authSchema";
 
 const authRouter = Router();
@@ -11,10 +11,14 @@ const userRepo = new UserRepository();
 const authService = new AuthService(userRepo);
 const authController = new AuthController(authService);
 
-authRouter.post("/login", validate(LoginSchema), authController.handleLogin);
+authRouter.post(
+  "/login",
+  validateReqBody(LoginSchema),
+  authController.handleLogin
+);
 authRouter.post(
   "/register",
-  validate(RegisterSchema),
+  validateReqBody(RegisterSchema),
   authController.handleRegister
 );
 

@@ -17,10 +17,7 @@ class UserRepository extends BaseRepository {
         },
       });
     } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError) {
-        throw new DatabaseError(error);
-      }
-      throw new DatabaseError(error as Error);
+      this.handleError(error, "Failed to find email");
     }
   }
 
@@ -34,10 +31,7 @@ class UserRepository extends BaseRepository {
         },
       });
     } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError) {
-        throw new DatabaseError(error);
-      }
-      throw new DatabaseError(error as Error);
+      this.handleError(error, "Failed to create account");
     }
   }
 }

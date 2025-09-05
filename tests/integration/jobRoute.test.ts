@@ -12,10 +12,12 @@ describe("Job Route Integration", () => {
     password: "secret123",
   };
   let accessToken: string;
-
+  let otherUser: any;
+  let otherJob: any;
   beforeAll(async () => {
     // Clean up in case
     await prisma.user.deleteMany({ where: { email: testUser.email } });
+    await prisma.user.deleteMany({ where: { email: "other@example.com" } });
 
     app = await initApp();
 
@@ -39,13 +41,36 @@ describe("Job Route Integration", () => {
       .expect(200);
 
     accessToken = loginRes.body.accessToken;
+    otherUser = await prisma.user.create({
+      data: {
+        email: "other@example.com",
+        name: "Other User",
+        password: await hashPassword("password"),
+      },
+    });
+    otherJob = await prisma.jobApplication.create({
+      data: {
+        company: "Google",
+        position: "Frontend Engineer",
+        status: "APPLIED",
+        appliedDate: new Date(),
+        userId: otherUser.id,
+      },
+    });
   });
 
   afterAll(async () => {
     await prisma.jobApplication.deleteMany({
-      where: { user: { email: testUser.email } },
+      where: {
+        OR: [
+          { user: { email: testUser.email } },
+          { user: { email: "other@example.com" } },
+        ],
+      },
     });
-    await prisma.user.deleteMany({ where: { email: testUser.email } });
+    await prisma.user.deleteMany({
+      where: { email: { in: [testUser.email, "other@example.com"] } },
+    });
     await prisma.$disconnect();
   });
 
@@ -175,15 +200,15 @@ describe("Job Route Integration", () => {
         .set("Authorization", `Bearer ${accessToken}`)
         .send({
           ...jobData,
-          source: null,
+          source: "",
           contactName: "",
           contactEmail: "",
         })
         .expect(201);
-
+      console.log(res);
       expect(res.body.source).toBeNull();
-      expect(res.body.contactName).toBe("");
-      expect(res.body.contactEmail).toBe("");
+      expect(res.body.contactName).toBeNull();
+      expect(res.body.contactEmail).toBeNull();
     });
 
     it("should persist job with correct userId", async () => {
@@ -199,6 +224,72 @@ describe("Job Route Integration", () => {
       });
 
       expect(jobInDb?.user.email).toBe(testUser.email);
+    });
+  });
+
+  describe("GET /api/v1/jobs/:id", () => {
+    let createdJobId: string;
+
+    beforeAll(async () => {
+      // Create a job first so we can fetch it
+      const jobRes = await request(app)
+        .post("/api/v1/jobs")
+        .set("Authorization", `Bearer ${accessToken}`)
+        .send({
+          company: "OpenAI",
+          position: "Backend Engineer",
+          source: "LinkedIn",
+          status: "APPLIED",
+          appliedDate: new Date().toISOString(),
+          deadline: null,
+          contactName: "Alice",
+          contactEmail: "alice@example.com",
+        })
+        .expect(201);
+
+      createdJobId = jobRes.body.id;
+    });
+
+    it("should return a job successfully", async () => {
+      const res = await request(app)
+        .get(`/api/v1/jobs/${createdJobId}`)
+        .set("Authorization", `Bearer ${accessToken}`)
+        .expect(200);
+
+      expect(res.body).toHaveProperty("id", createdJobId);
+      expect(res.body.company).toBe("OpenAI");
+      expect(res.body.position).toBe("Backend Engineer");
+    });
+
+    it("should return 404 if job not found", async () => {
+      const res = await request(app)
+        .get("/api/v1/jobs/non-existent-id")
+        .set("Authorization", `Bearer ${accessToken}`)
+        .expect(404);
+
+      expect(res.body.errorType).toBe("NOT_FOUND");
+      expect(Array.isArray(res.body.errors)).toBe(true);
+      expect(res.body.errors[0].message).toMatch(/not found/i);
+    });
+
+    it("should return 401 if no token provided", async () => {
+      await request(app).get(`/api/v1/jobs/${createdJobId}`).expect(401);
+    });
+
+    it("should return 401 for invalid token", async () => {
+      await request(app)
+        .get(`/api/v1/jobs/${createdJobId}`)
+        .set("Authorization", "Bearer invalid.token")
+        .expect(401);
+    });
+    it("should return only jobs that belong to the user", async () => {
+      // Our test user should NOT be able to fetch it
+      const res = await request(app)
+        .get(`/api/v1/jobs/${otherJob.id}`)
+        .set("Authorization", `Bearer ${accessToken}`)
+        .expect(404); // should behave as "not found" for unauthorized access
+
+      expect(res.body.errorType).toBe("NOT_FOUND");
     });
   });
 });

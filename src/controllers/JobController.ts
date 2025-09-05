@@ -13,11 +13,27 @@ class JobController {
         property: "token",
       });
     }
-    const jobData = await this.jobService.create({
+    const jobData = await this.jobService.createJobApplication({
       ...req.body,
       userId: req.user.userId,
     });
     return res.status(201).json(jobData);
+  };
+
+  handleGetJob = async (req: AuthRequest, res: Response) => {
+    if (!req.user) {
+      throw new AuthError({
+        message: "Authentication Failed",
+        property: "token",
+      });
+    }
+
+    const jobData = await this.jobService.getJobById(
+      req.params.id,
+      req.user.userId
+    );
+
+    return res.status(200).json(jobData);
   };
 }
 

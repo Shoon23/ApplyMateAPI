@@ -101,7 +101,9 @@ describe("Auth Service", () => {
         { code: "P9999", clientVersion: "unknown" }
       );
 
-      mockRepo.findByEmail.mockRejectedValue(new DatabaseError(prismaError));
+      mockRepo.findByEmail.mockRejectedValue(
+        new DatabaseError(prismaError, "Something Went Wrong")
+      );
 
       await expect(
         authService.login({ email: user.email, password: "correctPassword" })
@@ -197,10 +199,13 @@ describe("Auth Service", () => {
     it("should throw AuthError if repository create fails", async () => {
       (hashPassword as jest.Mock).mockResolvedValue("secureHash");
       mockRepo.create.mockRejectedValue(
-        new DatabaseError({
-          message: "Something Went Wrong",
-          name: "DATABASE_ERROR",
-        })
+        new DatabaseError(
+          {
+            message: "Something Went Wrong",
+            name: "DATABASE_ERROR",
+          },
+          "Something Went Wrong"
+        )
       );
 
       await expect(
