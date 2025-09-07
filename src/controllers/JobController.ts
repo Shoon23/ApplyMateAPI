@@ -3,8 +3,11 @@ import { Request, Response } from "express";
 import JobService from "../services/JobService";
 import { AuthRequest } from "../types/auth";
 import AuthError from "../errors/AuthError";
-class JobController {
-  constructor(private jobService: JobService) {}
+import BaseController from "./BaseController";
+class JobController extends BaseController {
+  constructor(private jobService: JobService) {
+    super();
+  }
 
   handleCreateJob = async (req: AuthRequest, res: Response) => {
     if (!req.user) {
@@ -34,6 +37,30 @@ class JobController {
     );
 
     return res.status(200).json(jobData);
+  };
+  handleGetJobs = async (req: AuthRequest, res: Response) => {
+    if (!req.user) {
+      throw new AuthError({
+        message: "Authentication Failed",
+        property: "token",
+      });
+    }
+
+    const { limit, page, skip } = this.getPagination(req);
+    const filters = {
+      search: (req.query.search as string) || "",
+      sortBy: (req.query.sortBy as string) || "APPLIED",
+      order: (req.query.order as string) || "desc",
+    };
+
+    const jobsdata = await this.jobService.getJobs({
+      filters,
+      limit,
+      page,
+      skip,
+      userId: req.user.userId,
+    });
+    res.status(200).json(jobsdata);
   };
 }
 

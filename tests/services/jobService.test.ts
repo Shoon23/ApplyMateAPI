@@ -124,7 +124,6 @@ describe("Job Service", () => {
         contactEmail: "",
         source: "",
       } as any);
-      console.log(res);
       const callArgs = mockRepo.create.mock.calls[0][0];
       expect(callArgs.contactName).toBeNull();
       expect(callArgs.contactEmail).toBeNull();
@@ -142,6 +141,98 @@ describe("Job Service", () => {
 
       const callArgs = mockRepo.create.mock.calls[0][0];
       expect(callArgs.userId).toBe("user-123");
+    });
+  });
+  describe("Get Jobs List", () => {
+    const mockJobs = [
+      { ...mockJob, id: "job-1", status: Status.APPLIED },
+      { ...mockJob, id: "job-2", status: Status.INTERVIEW },
+      { ...mockJob, id: "job-3", status: Status.WISHLIST },
+    ];
+
+    it("should return jobs with pagination metadata", async () => {
+      mockRepo.findAll.mockResolvedValue({
+        data: mockJobs,
+        meta: { total: 3, page: 1, limit: 10, totalPages: 1 },
+      });
+
+      const result = await jobService.getJobs({
+        userId: "user-123",
+        filters: { search: "", sortBy: "createdAt", order: "desc" },
+        page: 1,
+        limit: 10,
+        skip: 0,
+      });
+
+      expect(mockRepo.findAll).toHaveBeenCalledTimes(1);
+      expect(result.data.length).toBe(3);
+      expect(result.meta.total).toBe(3);
+      expect(result.meta.page).toBe(1);
+      expect(result.meta.limit).toBe(10);
+    });
+
+    it("should handle search filter", async () => {
+      mockRepo.findAll.mockResolvedValue({
+        data: [mockJobs[0]],
+        meta: { total: 1, page: 1, limit: 10, totalPages: 1 },
+      });
+
+      const result = await jobService.getJobs({
+        userId: "user-123",
+        filters: { search: "OpenAI", sortBy: "createdAt", order: "desc" },
+        page: 1,
+        limit: 10,
+        skip: 0,
+      });
+
+      expect(mockRepo.findAll).toHaveBeenCalledWith({
+        userId: "user-123",
+        filters: { search: "OpenAI", sortBy: "createdAt", order: "desc" },
+        page: 1,
+        limit: 10,
+        skip: 0,
+      });
+      expect(result.data[0].company).toBe("OpenAI");
+    });
+
+    it("should handle status sorting", async () => {
+      mockRepo.findAll.mockResolvedValue({
+        data: [mockJobs[1], mockJobs[0], mockJobs[2]],
+        meta: { total: 3, page: 1, limit: 10, totalPages: 1 },
+      });
+
+      const result = await jobService.getJobs({
+        userId: "user-123",
+        filters: { search: "", sortBy: "status", order: "asc" },
+        page: 1,
+        limit: 10,
+        skip: 0,
+      });
+
+      expect(mockRepo.findAll).toHaveBeenCalledWith({
+        userId: "user-123",
+        filters: { search: "", sortBy: "status", order: "asc" },
+        page: 1,
+        limit: 10,
+        skip: 0,
+      });
+      expect(result.data.length).toBe(3);
+    });
+
+    it("should throw DatabaseError if repository fails", async () => {
+      mockRepo.findAll.mockRejectedValue(
+        new DatabaseError(new Error("DB failed"), "Error fetching jobs")
+      );
+
+      await expect(
+        jobService.getJobs({
+          userId: "user-123",
+          filters: { search: "", sortBy: "createdAt", order: "desc" },
+          page: 1,
+          limit: 10,
+          skip: 0,
+        })
+      ).rejects.toThrow(DatabaseError);
     });
   });
 });

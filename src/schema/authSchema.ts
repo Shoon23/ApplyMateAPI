@@ -14,7 +14,7 @@ export const LoginSchema = Joi.object({
     "string.empty": "Password is required",
     "any.required": "Password is required",
   }),
-});
+}).required();
 
 export const RegisterSchema = Joi.object({
   name: Joi.string().min(2).max(50).required().messages({
@@ -38,7 +38,7 @@ export const RegisterSchema = Joi.object({
     "string.empty": "Password is required",
     "any.required": "Password is required",
   }),
-});
+}).required();
 
 export type RegisterSchemaType = {
   name: string;

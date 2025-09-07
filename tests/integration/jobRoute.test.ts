@@ -205,7 +205,6 @@ describe("Job Route Integration", () => {
           contactEmail: "",
         })
         .expect(201);
-      console.log(res);
       expect(res.body.source).toBeNull();
       expect(res.body.contactName).toBeNull();
       expect(res.body.contactEmail).toBeNull();
@@ -290,6 +289,103 @@ describe("Job Route Integration", () => {
         .expect(404); // should behave as "not found" for unauthorized access
 
       expect(res.body.errorType).toBe("NOT_FOUND");
+    });
+  });
+  describe("GET /api/v1/jobs", () => {
+    beforeAll(async () => {
+      const jobs = [
+        { company: "Apple", position: "iOS Dev", status: "APPLIED" },
+        { company: "Microsoft", position: "Backend Dev", status: "INTERVIEW" },
+        { company: "Google", position: "Frontend Dev", status: "WISHLIST" },
+        { company: "Amazon", position: "DevOps", status: "OFFER" },
+        { company: "Facebook", position: "Fullstack", status: "HIRED" },
+        { company: "Netflix", position: "Backend", status: "REJECTED" },
+      ];
+
+      for (const job of jobs) {
+        await request(app)
+          .post("/api/v1/jobs")
+          .set("Authorization", `Bearer ${accessToken}`)
+          .send({
+            ...job,
+            appliedDate: new Date().toISOString(),
+            deadline: null,
+            contactName: "Alice",
+            contactEmail: "alice@example.com",
+          });
+      }
+    });
+
+    it("should return paginated jobs", async () => {
+      const res = await request(app)
+        .get("/api/v1/jobs?limit=2&page=1")
+        .set("Authorization", `Bearer ${accessToken}`)
+        .expect(200);
+
+      expect(res.body.data.length).toBeLessThanOrEqual(2);
+      expect(res.body.meta.page).toBe(1);
+      expect(res.body.meta.limit).toBe(2);
+      expect(res.body.meta.total).toBeGreaterThanOrEqual(4);
+      expect(res.body.meta.totalPages).toBeGreaterThanOrEqual(2);
+    });
+
+    it("should filter jobs by search query", async () => {
+      const res = await request(app)
+        .get("/api/v1/jobs?search=Apple")
+        .set("Authorization", `Bearer ${accessToken}`)
+        .expect(200);
+
+      expect(res.body.data.length).toBe(1);
+      expect(res.body.data[0].company).toBe("Apple");
+    });
+
+    const STATUS_ORDER = [
+      "WISHLIST",
+      "APPLIED",
+      "INTERVIEW",
+      "OFFER",
+      "HIRED",
+      "REJECTED",
+    ];
+
+    it("should return 401 if no token provided", async () => {
+      await request(app).get("/api/v1/jobs").expect(401);
+    });
+
+    it("should return 401 for invalid token", async () => {
+      await request(app)
+        .get("/api/v1/jobs")
+        .set("Authorization", "Bearer invalid.token")
+        .expect(401);
+    });
+    describe("GET /api/v1/jobs sorting by all statuses", () => {
+      const STATUS_ORDER = [
+        "WISHLIST",
+        "APPLIED",
+        "INTERVIEW",
+        "OFFER",
+        "HIRED",
+        "REJECTED",
+      ];
+
+      for (const sortBy of STATUS_ORDER) {
+        for (const order of ["asc", "desc"] as const) {
+          it(`should sort jobs by ${sortBy} in ${order} order`, async () => {
+            const res = await request(app)
+              .get(`/api/v1/jobs?sortBy=${sortBy}&order=${order}`)
+              .set("Authorization", `Bearer ${accessToken}`)
+              .expect(200);
+
+            const statuses = res.body.data.map((j: any) => j.status);
+            const sortedStatuses = [...statuses].sort((a, b) =>
+              order === "asc"
+                ? STATUS_ORDER.indexOf(a) - STATUS_ORDER.indexOf(b)
+                : STATUS_ORDER.indexOf(b) - STATUS_ORDER.indexOf(a)
+            );
+            expect(statuses).toEqual(sortedStatuses);
+          });
+        }
+      }
     });
   });
 });

@@ -45,14 +45,41 @@ export const JobApplicationSchema = Joi.object({
     .messages({
       "string.email": "Invalid contact email",
     }),
-});
+}).required();
 
 export const JobApplicationID = Joi.object({
   id: Joi.string().required().messages({
     "string.empty": "Job ID is required",
     "any.required": "Job ID is required",
   }),
-});
+}).required();
+export const JobQuerySchema = Joi.object({
+  page: Joi.number().integer().min(1).default(1).messages({
+    "number.base": "Page must be a number",
+    "number.min": "Page must be at least 1",
+  }),
+
+  limit: Joi.number().integer().min(1).max(100).default(10).messages({
+    "number.base": "Limit must be a number",
+    "number.min": "Limit must be at least 1",
+    "number.max": "Limit cannot exceed 100",
+  }),
+
+  search: Joi.string().allow("").messages({
+    "string.base": "Search must be a string",
+  }),
+
+  sortBy: Joi.string()
+    .valid(...Object.values(Status))
+    .default(Status.APPLIED)
+    .messages({
+      "any.only": `SortBy must be one of: ${Object.values(Status).join(", ")}`,
+    }),
+
+  order: Joi.string().valid("asc", "desc").default("desc").messages({
+    "any.only": "Order must be either asc or desc",
+  }),
+}).required();
 export type JobApplicationType = {
   company: string;
   position: string;
