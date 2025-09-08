@@ -10,20 +10,18 @@ class JobController extends BaseController {
   }
 
   handleCreateJob = async (req: AuthRequest, res: Response) => {
-    if (!req.user) {
-      throw new AuthError({
-        message: "Authentication Failed",
-        property: "token",
-      });
-    }
+    const user = this.requireAuth(req);
+
     const jobData = await this.jobService.createJobApplication({
       ...req.body,
-      userId: req.user.userId,
+      userId: user.userId,
     });
     return res.status(201).json(jobData);
   };
 
   handleGetJob = async (req: AuthRequest, res: Response) => {
+    const user = this.requireAuth(req);
+
     if (!req.user) {
       throw new AuthError({
         message: "Authentication Failed",
@@ -33,18 +31,13 @@ class JobController extends BaseController {
 
     const jobData = await this.jobService.getJobById(
       req.params.id,
-      req.user.userId
+      user.userId
     );
 
     return res.status(200).json(jobData);
   };
   handleGetJobs = async (req: AuthRequest, res: Response) => {
-    if (!req.user) {
-      throw new AuthError({
-        message: "Authentication Failed",
-        property: "token",
-      });
-    }
+    const user = this.requireAuth(req);
 
     const { limit, page, skip } = this.getPagination(req);
     const filters = {
@@ -58,9 +51,21 @@ class JobController extends BaseController {
       limit,
       page,
       skip,
-      userId: req.user.userId,
+      userId: user.userId,
     });
     res.status(200).json(jobsdata);
+  };
+
+  handleUpdateJob = async (req: AuthRequest, res: Response) => {
+    const user = this.requireAuth(req);
+    const jobId = req.params.id;
+    const updatedJob = await this.jobService.updateJob({
+      ...req.body,
+      id: jobId,
+      userId: user.userId,
+    });
+
+    res.status(200).json(updatedJob);
   };
 }
 

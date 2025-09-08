@@ -80,6 +80,62 @@ export const JobQuerySchema = Joi.object({
     "any.only": "Order must be either asc or desc",
   }),
 }).required();
+
+export const UpdateJobApplicationSchema = Joi.object({
+  company: Joi.string().min(2).max(100).messages({
+    "string.min": "Company name must be at least 2 characters long",
+    "string.max": "Company name must be less than or equal to 100 characters",
+  }),
+
+  position: Joi.string().min(2).max(100).messages({
+    "string.min": "Position must be at least 2 characters long",
+    "string.max": "Position must be less than or equal to 100 characters",
+  }),
+
+  source: Joi.string().max(100).allow(null, "").messages({
+    "string.max": "Source must be less than or equal to 100 characters",
+  }),
+
+  status: Joi.string()
+    .valid(...Object.values(Status))
+    .messages({
+      "any.only": `Status must be one of: ${Object.values(Status).join(", ")}`,
+    }),
+
+  appliedDate: Joi.date().allow(null).messages({
+    "date.base": "Applied date must be a valid date",
+  }),
+
+  deadline: Joi.date().allow(null).messages({
+    "date.base": "Deadline must be a valid date",
+  }),
+
+  contactName: Joi.string().max(100).allow(null, "").messages({
+    "string.max": "Contact name must be less than or equal to 100 characters",
+  }),
+
+  contactEmail: Joi.string()
+    .email({ tlds: { allow: false } })
+    .allow(null, "")
+    .messages({
+      "string.email": "Invalid contact email",
+    }),
+})
+  .min(1)
+  .messages({
+    "object.min": "At least one field must be provided to update",
+  });
+
+export type UpdateJobApplicationType = {
+  company?: string;
+  position?: string;
+  source?: string | null;
+  status?: Status;
+  appliedDate?: Date | null;
+  deadline?: Date | null;
+  contactName?: string | null;
+  contactEmail?: string | null;
+};
 export type JobApplicationType = {
   company: string;
   position: string;

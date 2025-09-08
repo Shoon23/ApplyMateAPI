@@ -235,4 +235,206 @@ describe("Job Service", () => {
       ).rejects.toThrow(DatabaseError);
     });
   });
+
+  describe("Update Job Application", () => {
+    it("Should return a updated company name", async () => {
+      mockRepo.update.mockResolvedValue({
+        ...mockJob,
+        company: "google",
+      });
+
+      const updatedJob = await jobService.updateJob({
+        company: "google",
+        id: mockJob.id,
+        userId: mockJob.userId,
+      });
+
+      expect(updatedJob.company).toBe("google");
+    });
+    it("Should update and return the full job object", async () => {
+      const updatedJobData = { ...mockJob, company: "Google LLC" };
+      mockRepo.update.mockResolvedValue(updatedJobData);
+
+      const updatedJob = await jobService.updateJob(updatedJobData);
+
+      expect(updatedJob).toMatchObject({
+        id: "job-123",
+        company: "Google LLC",
+        position: "Backend Engineer",
+      });
+    });
+    it("Should update company", async () => {
+      mockRepo.update.mockResolvedValue({ ...mockJob, company: "Google" });
+
+      const updatedJob = await jobService.updateJob({
+        company: "Google",
+        id: mockJob.id,
+        userId: mockJob.userId,
+      });
+
+      expect(updatedJob.company).toBe("Google");
+    });
+
+    it("Should update position", async () => {
+      mockRepo.update.mockResolvedValue({
+        ...mockJob,
+        position: "Frontend Engineer",
+      });
+
+      const updatedJob = await jobService.updateJob({
+        id: mockJob.id,
+        userId: mockJob.userId,
+        position: "Frontend Engineer",
+      });
+
+      expect(updatedJob.position).toBe("Frontend Engineer");
+    });
+
+    it("Should update source", async () => {
+      mockRepo.update.mockResolvedValue({ ...mockJob, source: "Indeed" });
+
+      const updatedJob = await jobService.updateJob({
+        id: mockJob.id,
+        userId: mockJob.userId,
+        source: "Indeed",
+      });
+
+      expect(updatedJob.source).toBe("Indeed");
+    });
+
+    it("Should update status", async () => {
+      mockRepo.update.mockResolvedValue({
+        ...mockJob,
+        status: Status.INTERVIEW,
+      });
+
+      const updatedJob = await jobService.updateJob({
+        id: mockJob.id,
+        userId: mockJob.userId,
+        status: Status.INTERVIEW,
+      });
+
+      expect(updatedJob.status).toBe(Status.INTERVIEW);
+    });
+
+    it("Should update appliedDate", async () => {
+      const newDate = new Date("2025-01-01");
+      mockRepo.update.mockResolvedValue({ ...mockJob, appliedDate: newDate });
+
+      const updatedJob = await jobService.updateJob({
+        id: mockJob.id,
+        userId: mockJob.userId,
+        appliedDate: newDate,
+      });
+
+      expect(updatedJob.appliedDate).toEqual(newDate);
+    });
+
+    it("Should update deadline", async () => {
+      const newDeadline = new Date("2025-12-31");
+      mockRepo.update.mockResolvedValue({ ...mockJob, deadline: newDeadline });
+
+      const updatedJob = await jobService.updateJob({
+        id: mockJob.id,
+        userId: mockJob.userId,
+        deadline: newDeadline,
+      });
+
+      expect(updatedJob.deadline).toEqual(newDeadline);
+    });
+
+    it("Should update contactName", async () => {
+      mockRepo.update.mockResolvedValue({ ...mockJob, contactName: "Bob" });
+
+      const updatedJob = await jobService.updateJob({
+        id: mockJob.id,
+        userId: mockJob.userId,
+        contactName: "Bob",
+      });
+
+      expect(updatedJob.contactName).toBe("Bob");
+    });
+
+    it("Should update contactEmail", async () => {
+      mockRepo.update.mockResolvedValue({
+        ...mockJob,
+        contactEmail: "bob@example.com",
+      });
+
+      const updatedJob = await jobService.updateJob({
+        id: mockJob.id,
+        userId: mockJob.userId,
+        contactEmail: "bob@example.com",
+      });
+
+      expect(updatedJob.contactEmail).toBe("bob@example.com");
+    });
+
+    it("Should update userId", async () => {
+      mockRepo.update.mockResolvedValue({ ...mockJob, userId: "user-456" });
+
+      const updatedJob = await jobService.updateJob({
+        id: "job-123",
+        userId: "user-456",
+      });
+
+      expect(updatedJob.userId).toBe("user-456");
+    });
+    it("should throw DatabaseError if repository fails", async () => {
+      mockRepo.findAll.mockRejectedValue(
+        new DatabaseError(new Error("DB failed"), "Error fetching jobs")
+      );
+
+      await expect(
+        jobService.getJobs({
+          userId: "user-123",
+          filters: { search: "", sortBy: "createdAt", order: "desc" },
+          page: 1,
+          limit: 10,
+          skip: 0,
+        })
+      ).rejects.toThrow(DatabaseError);
+    });
+
+    it("Should return NotFoundError instance if the job is not found", async () => {
+      mockRepo.update.mockRejectedValue(
+        new NotFoundError({
+          message: "Job Not Found",
+        })
+      );
+
+      await expect(
+        jobService.updateJob({
+          id: mockJob.id,
+          userId: mockJob.userId,
+          company: "Meta",
+        })
+      ).rejects.toBeInstanceOf(NotFoundError);
+    });
+    it("Should only update the selected field and leave others unchanged", async () => {
+      const originalJob = { ...mockJob };
+
+      // Simulate updating only the company field
+      const updatedJobData = { ...originalJob, company: "Amazon" };
+      mockRepo.update.mockResolvedValue(updatedJobData);
+
+      const updatedJob = await jobService.updateJob({
+        id: mockJob.id,
+        userId: mockJob.userId,
+        company: "Amazon",
+      });
+
+      // Ensure company updated
+      expect(updatedJob.company).toBe("Amazon");
+
+      // Ensure other fields remain unchanged
+      expect(updatedJob.position).toBe(originalJob.position);
+      expect(updatedJob.status).toBe(originalJob.status);
+      expect(updatedJob.userId).toBe(originalJob.userId);
+      expect(updatedJob.appliedDate).toEqual(originalJob.appliedDate);
+      expect(updatedJob.deadline).toEqual(originalJob.deadline);
+      expect(updatedJob.contactName).toBe(originalJob.contactName);
+      expect(updatedJob.contactEmail).toBe(originalJob.contactEmail);
+    });
+  });
 });

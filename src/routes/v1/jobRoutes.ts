@@ -7,6 +7,7 @@ import {
   JobApplicationID,
   JobApplicationSchema,
   JobQuerySchema,
+  UpdateJobApplicationSchema,
 } from "../../schema/jobSchema";
 import { validateReqParam } from "../../middlewares/validateReqParam";
 import { validateReqQuery } from "../../middlewares/validateReqQuery";
@@ -38,7 +39,12 @@ jobRoutes.post(
 );
 
 // PUT /jobs/:id → update a job
-jobRoutes.put("/:id", (req, res) => {});
+jobRoutes.patch(
+  "/:id",
+  validateReqParam(JobApplicationID),
+  validateReqBody(UpdateJobApplicationSchema),
+  jobController.handleUpdateJob
+);
 
 // DELETE /jobs/:id → delete a job
 jobRoutes.delete("/:id", (req, res) => {});

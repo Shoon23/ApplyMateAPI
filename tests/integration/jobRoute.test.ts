@@ -388,4 +388,109 @@ describe("Job Route Integration", () => {
       }
     });
   });
+
+  describe("PATCH /api/v1/jobs/:id", () => {
+    let createdJobId: string;
+
+    beforeAll(async () => {
+      // Create a job first so we can update it
+      const jobRes = await request(app)
+        .post("/api/v1/jobs")
+        .set("Authorization", `Bearer ${accessToken}`)
+        .send({
+          company: "Tesla",
+          position: "Software Engineer",
+          status: "APPLIED",
+          appliedDate: new Date().toISOString(),
+          deadline: null,
+          contactName: "Alice",
+          contactEmail: "alice@example.com",
+        })
+        .expect(201);
+
+      createdJobId = jobRes.body.id;
+    });
+    afterAll(async () => {
+      // Clean up this specific job
+      if (createdJobId) {
+        await prisma.jobApplication.deleteMany({
+          where: { id: createdJobId },
+        });
+      }
+    });
+    it("should update a job successfully", async () => {
+      const updateData = { company: "SpaceX" };
+
+      const res = await request(app)
+        .patch(`/api/v1/jobs/${createdJobId}`)
+        .set("Authorization", `Bearer ${accessToken}`)
+        .send(updateData)
+        .expect(200);
+
+      expect(res.body).toHaveProperty("id", createdJobId);
+      expect(res.body.company).toBe("SpaceX");
+
+      // Verify in DB
+      const jobInDb = await prisma.jobApplication.findUnique({
+        where: { id: createdJobId },
+      });
+      expect(jobInDb?.company).toBe("SpaceX");
+    });
+
+    it("should return 404 if job not found", async () => {
+      const res = await request(app)
+        .patch("/api/v1/jobs/non-existent-id")
+        .set("Authorization", `Bearer ${accessToken}`)
+        .send({ company: "Meta" })
+        .expect(404);
+
+      expect(res.body.errorType).toBe("NOT_FOUND");
+      expect(res.body.errors[0].message).toMatch(/not found/i);
+    });
+
+    it("should return 400 for invalid input", async () => {
+      const res = await request(app)
+        .patch(`/api/v1/jobs/${createdJobId}`)
+        .set("Authorization", `Bearer ${accessToken}`)
+        .send({ contactEmail: "not-an-email" })
+        .expect(400);
+
+      const emailError = res.body.errors.find(
+        (e: any) => e.property === "contactEmail"
+      );
+      expect(emailError).toBeDefined();
+      expect(emailError.message).toMatch(/invalid contact email/i);
+    });
+
+    it("should return 401 if no token provided", async () => {
+      await request(app)
+        .patch(`/api/v1/jobs/${createdJobId}`)
+        .send({ company: "Unauthorized" })
+        .expect(401);
+    });
+
+    it("should return 401 for invalid token", async () => {
+      await request(app)
+        .patch(`/api/v1/jobs/${createdJobId}`)
+        .set("Authorization", "Bearer invalid.token")
+        .send({ company: "Invalid" })
+        .expect(401);
+    });
+
+    it("should not allow updating another user's job", async () => {
+      const res = await request(app)
+        .patch(`/api/v1/jobs/${otherJob.id}`) // job owned by otherUser
+        .set("Authorization", `Bearer ${accessToken}`)
+        .send({ company: "Hacker Updated" })
+        .expect(404); // should behave like not found
+
+      expect(res.body.errorType).toBe("NOT_FOUND");
+
+      // Confirm DB not modified
+      const jobInDb = await prisma.jobApplication.findUnique({
+        where: { id: otherJob.id },
+      });
+      expect(jobInDb?.company).toBe("Google"); // original value
+    });
+  });
 });

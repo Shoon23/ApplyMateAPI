@@ -1,4 +1,7 @@
-import { JobApplicationType } from "../schema/jobSchema";
+import {
+  JobApplicationType,
+  UpdateJobApplicationType,
+} from "../schema/jobSchema";
 import JobRepository, {
   CreateJobType,
   JobFilters,
@@ -67,6 +70,22 @@ class JobService {
     });
 
     return jobsData;
+  }
+
+  async updateJob(
+    data: UpdateJobApplicationType & { id: string; userId: string }
+  ) {
+    logger.info("Updating job application", {
+      jobId: data.id,
+      userId: data.userId,
+    });
+
+    const updatedJob = await this.jobRepo.update(data);
+    logger.info("Job Updated successfully", {
+      jobId: data.id,
+      userId: data.userId,
+    });
+    return updatedJob;
   }
 }
 

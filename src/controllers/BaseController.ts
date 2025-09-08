@@ -1,3 +1,4 @@
+import AuthError from "../errors/AuthError";
 import { AuthRequest } from "../types/auth";
 
 export default class BaseController {
@@ -10,5 +11,14 @@ export default class BaseController {
     const skip = (page - 1) * limit;
 
     return { page, limit, skip };
+  }
+  protected requireAuth(req: AuthRequest) {
+    if (!req.user) {
+      throw new AuthError({
+        message: "Authentication Failed",
+        property: "token",
+      });
+    }
+    return req.user;
   }
 }

@@ -1,8 +1,12 @@
 import { Prisma, Status } from "../../generated/prisma";
 import DatabaseError from "../errors/DatabaseError";
-import { JobApplicationType } from "../schema/jobSchema";
+import NotFoundError from "../errors/NotFoundError";
+import {
+  JobApplicationType,
+  UpdateJobApplicationType,
+} from "../schema/jobSchema";
+import logger from "../utils/logger";
 import BaseRepository from "./BaseRepository";
-import UserRepository from "./UserRepository";
 export type CreateJobType = JobApplicationType & { userId: string };
 
 export type JobFilters = {
@@ -90,7 +94,34 @@ class JobRepository extends BaseRepository {
     }
   }
 
-  async update(id: string, data: any) {}
+  async update(
+    data: UpdateJobApplicationType & { id: string; userId: string }
+  ) {
+    try {
+      const { id, userId, ...job } = data;
+
+      const existingJob = await this.prisma.jobApplication.findFirst({
+        where: { id: id, userId: userId },
+      });
+      if (!existingJob) {
+        logger.warn("Job Not Found", {
+          id,
+          userId,
+        });
+        throw new NotFoundError({
+          message: `Job Not Found`,
+        });
+      }
+      return await this.prisma.jobApplication.update({
+        where: {
+          id: id,
+        },
+        data: job,
+      });
+    } catch (error) {
+      this.handleError(error, "Failed to Update Jobs");
+    }
+  }
 
   async deleteJob(id: string) {}
 }
