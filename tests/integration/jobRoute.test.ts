@@ -493,4 +493,85 @@ describe("Job Route Integration", () => {
       expect(jobInDb?.company).toBe("Google"); // original value
     });
   });
+
+  describe("DELETE /api/v1/jobs/:id", () => {
+    let createdJobId: string;
+
+    beforeAll(async () => {
+      // Create a job owned by testUser
+      const jobRes = await request(app)
+        .post("/api/v1/jobs")
+        .set("Authorization", `Bearer ${accessToken}`)
+        .send({
+          company: "DeleteMe Inc",
+          position: "QA Engineer",
+          status: "APPLIED",
+          appliedDate: new Date().toISOString(),
+          deadline: null,
+          contactName: "Alice",
+          contactEmail: "alice@example.com",
+        })
+        .expect(201);
+
+      createdJobId = jobRes.body.id;
+    });
+    afterAll(async () => {
+      // Clean up this specific job
+      if (createdJobId) {
+        await prisma.jobApplication.deleteMany({
+          where: { id: createdJobId },
+        });
+      }
+    });
+    it("should delete a job successfully", async () => {
+      const res = await request(app)
+        .delete(`/api/v1/jobs/${createdJobId}`)
+        .set("Authorization", `Bearer ${accessToken}`)
+        .expect(200);
+      expect(res.body.data).toHaveProperty("id", createdJobId);
+
+      // Verify it's gone from DB
+      const jobInDb = await prisma.jobApplication.findUnique({
+        where: { id: createdJobId },
+      });
+      expect(jobInDb).toBeNull();
+    });
+
+    it("should return 404 if job not found", async () => {
+      const res = await request(app)
+        .delete("/api/v1/jobs/non-existent-id")
+        .set("Authorization", `Bearer ${accessToken}`)
+        .expect(404);
+
+      expect(res.body.errorType).toBe("NOT_FOUND");
+      expect(res.body.errors[0].message).toMatch(/not found/i);
+    });
+
+    it("should not allow deleting another user's job", async () => {
+      const res = await request(app)
+        .delete(`/api/v1/jobs/${otherJob.id}`) // belongs to otherUser
+        .set("Authorization", `Bearer ${accessToken}`)
+        .expect(404); // should behave like not found
+
+      expect(res.body.errorType).toBe("NOT_FOUND");
+
+      // Ensure it's still in DB
+      const jobInDb = await prisma.jobApplication.findUnique({
+        where: { id: otherJob.id },
+      });
+      expect(jobInDb).not.toBeNull();
+      expect(jobInDb?.company).toBe("Google");
+    });
+
+    it("should return 401 if no token provided", async () => {
+      await request(app).delete(`/api/v1/jobs/${createdJobId}`).expect(401);
+    });
+
+    it("should return 401 for invalid token", async () => {
+      await request(app)
+        .delete(`/api/v1/jobs/${createdJobId}`)
+        .set("Authorization", "Bearer invalid.token")
+        .expect(401);
+    });
+  });
 });

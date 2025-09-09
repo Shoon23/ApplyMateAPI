@@ -87,6 +87,19 @@ class JobService {
     });
     return updatedJob;
   }
+  async deleteJob(id: string, userId: string) {
+    logger.info("Deleting job application", {
+      jobId: id,
+      userId: userId,
+    });
+
+    const deletedJob = await this.jobRepo.delete(id, userId);
+    logger.info("Job application deleted Successfully", {
+      jobId: id,
+      userId: userId,
+    });
+    return deletedJob;
+  }
 }
 
 export default JobService;

@@ -100,30 +100,52 @@ class JobRepository extends BaseRepository {
     try {
       const { id, userId, ...job } = data;
 
-      const existingJob = await this.prisma.jobApplication.findFirst({
-        where: { id: id, userId: userId },
-      });
-      if (!existingJob) {
-        logger.warn("Job Not Found", {
-          id,
-          userId,
+      return await this.prisma.$transaction(async (tx) => {
+        const existingJob = await tx.jobApplication.findFirst({
+          where: { id, userId },
         });
-        throw new NotFoundError({
-          message: `Job Not Found`,
+
+        if (!existingJob) {
+          logger.warn("Job Not Found", { id, userId });
+          throw new NotFoundError({ message: `Job Not Found` });
+        }
+
+        return await tx.jobApplication.update({
+          where: { id },
+          data: job,
         });
-      }
-      return await this.prisma.jobApplication.update({
-        where: {
-          id: id,
-        },
-        data: job,
       });
     } catch (error) {
       this.handleError(error, "Failed to Update Jobs");
     }
   }
 
-  async deleteJob(id: string) {}
+  async delete(id: string, userId: string) {
+    try {
+      return await this.prisma.$transaction(async (tx) => {
+        const isExistingJob = await tx.jobApplication.findFirst({
+          where: { id, userId },
+        });
+
+        if (!isExistingJob) {
+          logger.warn("Job Not Found", {
+            id,
+            userId,
+          });
+          throw new NotFoundError({
+            message: "Job Not Found",
+            property: "id",
+          });
+        }
+
+        return await tx.jobApplication.delete({
+          where: { id },
+        });
+      });
+    } catch (error) {
+      this.handleError(error, "Failed to delete job");
+    }
+  }
 }
 
 export default JobRepository;

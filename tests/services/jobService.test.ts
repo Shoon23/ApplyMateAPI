@@ -437,4 +437,38 @@ describe("Job Service", () => {
       expect(updatedJob.contactEmail).toBe(originalJob.contactEmail);
     });
   });
+  describe("Delete Job Application", () => {
+    it("should delete a job application successfully", async () => {
+      mockRepo.delete.mockResolvedValue(mockJob);
+
+      const result = await jobService.deleteJob(mockJob.id, mockJob.userId);
+
+      expect(mockRepo.delete).toHaveBeenCalledWith(mockJob.id, mockJob.userId);
+      expect(result).toEqual(mockJob);
+    });
+
+    it("should throw NotFoundError if job does not exist", async () => {
+      // Arrange
+      mockRepo.delete.mockRejectedValue(
+        new NotFoundError({ message: "Job Not Found" })
+      );
+
+      // Act + Assert
+      await expect(
+        jobService.deleteJob("non-existent-id", "user-123")
+      ).rejects.toBeInstanceOf(NotFoundError);
+    });
+
+    it("should throw DatabaseError if repository fails", async () => {
+      // Arrange
+      mockRepo.delete.mockRejectedValue(
+        new DatabaseError(new Error("DB failed"), "Error deleting job")
+      );
+
+      // Act + Assert
+      await expect(
+        jobService.deleteJob(mockJob.id, mockJob.userId)
+      ).rejects.toThrow(DatabaseError);
+    });
+  });
 });

@@ -47,6 +47,10 @@ jobRoutes.patch(
 );
 
 // DELETE /jobs/:id → delete a job
-jobRoutes.delete("/:id", (req, res) => {});
+jobRoutes.delete(
+  "/:id",
+  validateReqParam(JobApplicationID),
+  jobController.handleDeleteJob
+);
 
 export default jobRoutes;

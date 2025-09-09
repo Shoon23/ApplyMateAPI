@@ -67,6 +67,18 @@ class JobController extends BaseController {
 
     res.status(200).json(updatedJob);
   };
+
+  handleDeleteJob = async (req: AuthRequest, res: Response) => {
+    const user = this.requireAuth(req);
+    const jobId = req.params.id;
+
+    const deletedJob = await this.jobService.deleteJob(jobId, user.userId);
+
+    res.status(200).json({
+      message: "Job Delete Successfully",
+      data: deletedJob,
+    });
+  };
 }
 
 export default JobController;
