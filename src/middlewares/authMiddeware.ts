@@ -23,7 +23,7 @@ export const authMiddeware = (
   const token = authHeader.split(" ")[1];
 
   try {
-    const decoded = verifyToken(token, false); // false = not refresh
+    const decoded = verifyToken(token, false);
     req.user = decoded;
     next();
   } catch (err) {

@@ -4,11 +4,9 @@ import AuthError from "../errors/AuthError";
 
 const generateAccessToken = (userId: string): string => {
   try {
-    return jwt.sign(
-      { userId },
-      config.ACCESS_TOKEN_SECRET as string,
-      { expiresIn: "1h" } // short-lived
-    );
+    return jwt.sign({ userId }, config.ACCESS_TOKEN_SECRET as string, {
+      expiresIn: "1h",
+    });
   } catch (error) {
     throw new AuthError({
       message: "Failed to generate access token",
@@ -19,11 +17,9 @@ const generateAccessToken = (userId: string): string => {
 
 const generateRefreshToken = (userId: string): string => {
   try {
-    return jwt.sign(
-      { userId },
-      config.REFRESH_TOKEN_SECRET as string,
-      { expiresIn: "7d" } // longer-lived
-    );
+    return jwt.sign({ userId }, config.REFRESH_TOKEN_SECRET as string, {
+      expiresIn: "7d",
+    });
   } catch (error) {
     throw new AuthError({
       message: "Failed to generate refresh token",
@@ -39,7 +35,7 @@ const verifyToken = (token: string, isRefresh = false): JwtPayload => {
 
     const decoded = jwt.verify(token, secret);
 
-    return decoded as JwtPayload; // contains { userId, iat, exp }
+    return decoded as JwtPayload;
   } catch (error) {
     throw new AuthError({
       message: "Invalid or expired token",
