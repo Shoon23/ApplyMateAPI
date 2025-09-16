@@ -1,7 +1,7 @@
 import { Prisma } from "../../generated/prisma";
+import { RegisterDTO } from "../dto/auth.dto";
 import AuthError from "../errors/AuthError";
 import DatabaseError from "../errors/DatabaseError";
-import { RegisterSchemaType } from "../schema/authSchema";
 import BaseRepository from "./BaseRepository";
 
 class UserRepository extends BaseRepository {
@@ -14,6 +14,7 @@ class UserRepository extends BaseRepository {
           email: true,
           name: true,
           password: true,
+          createdAt: true,
         },
       });
     } catch (error) {
@@ -21,7 +22,7 @@ class UserRepository extends BaseRepository {
     }
   }
 
-  async create(userCredentials: RegisterSchemaType) {
+  async create(userCredentials: RegisterDTO) {
     try {
       return await this.prisma.user.create({
         data: {

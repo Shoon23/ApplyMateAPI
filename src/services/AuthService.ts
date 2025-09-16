@@ -1,17 +1,18 @@
 import AuthError from "../errors/AuthError";
 import UserRepository from "../repository/UserRepository";
-import { LoginSchemaType, RegisterSchemaType } from "../schema/authSchema";
+import { LoginDTO, RegisterDTO } from "../dto/auth.dto";
 import {
   generateAccessToken,
   generateRefreshToken,
 } from "../utils/generateJwt";
 import { comparePassword, hashPassword } from "../utils/hashPassword";
 import logger from "../utils/logger";
+import { toUserDTO } from "../mapppers/user.mapper";
 
 class AuthService {
   constructor(private userRepo: UserRepository) {}
 
-  async login(userCredentials: LoginSchemaType) {
+  async login(userCredentials: LoginDTO) {
     logger.info(`Login Attempt for email: ${userCredentials.email}`);
 
     const user = await this.userRepo.findByEmail(userCredentials.email);
@@ -42,17 +43,16 @@ class AuthService {
 
     const accessToken = generateAccessToken(user.id);
     const refreshToken = generateRefreshToken(user.id);
-    const { password: _, ...userWithoutPassword } = user;
     logger.info(`Login successful for email: ${userCredentials.email}`);
 
     return {
-      user: userWithoutPassword,
+      user: toUserDTO(user),
       accessToken,
       refreshToken,
     };
   }
 
-  async register(userCredentials: RegisterSchemaType) {
+  async register(userCredentials: RegisterDTO) {
     const user = await this.userRepo.findByEmail(userCredentials.email);
 
     if (user) {
@@ -71,9 +71,8 @@ class AuthService {
     });
     const accessToken = generateAccessToken(createdUser.id);
     const refreshToken = generateRefreshToken(createdUser.id);
-    const { password: _, ...userWithoutPassword } = createdUser;
     return {
-      user: userWithoutPassword,
+      user: toUserDTO(createdUser),
       accessToken,
       refreshToken,
     };

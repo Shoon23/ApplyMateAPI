@@ -39,13 +39,3 @@ export const RegisterSchema = Joi.object({
     "any.required": "Password is required",
   }),
 }).required();
-
-export type RegisterSchemaType = {
-  name: string;
-  email: string;
-  password: string;
-};
-export type LoginSchemaType = {
-  email: string;
-  password: string;
-};

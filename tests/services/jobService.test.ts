@@ -158,10 +158,8 @@ describe("Job Service", () => {
 
       const result = await jobService.getJobs({
         userId: "user-123",
-        filters: { search: "", sortBy: "createdAt", order: "desc" },
-        page: 1,
-        limit: 10,
-        skip: 0,
+        query: { search: "", sortBy: "createdAt", order: "desc" },
+        pagination: { page: 1, limit: 10, skip: 0 },
       });
 
       expect(mockRepo.findAll).toHaveBeenCalledTimes(1);
@@ -179,18 +177,14 @@ describe("Job Service", () => {
 
       const result = await jobService.getJobs({
         userId: "user-123",
-        filters: { search: "OpenAI", sortBy: "createdAt", order: "desc" },
-        page: 1,
-        limit: 10,
-        skip: 0,
+        query: { search: "OpenAI", sortBy: "createdAt", order: "desc" },
+        pagination: { page: 1, limit: 10, skip: 0 },
       });
 
       expect(mockRepo.findAll).toHaveBeenCalledWith({
         userId: "user-123",
         filters: { search: "OpenAI", sortBy: "createdAt", order: "desc" },
-        page: 1,
-        limit: 10,
-        skip: 0,
+        pagination: { page: 1, limit: 10, skip: 0 },
       });
       expect(result.data[0].company).toBe("OpenAI");
     });
@@ -203,18 +197,14 @@ describe("Job Service", () => {
 
       const result = await jobService.getJobs({
         userId: "user-123",
-        filters: { search: "", sortBy: "status", order: "asc" },
-        page: 1,
-        limit: 10,
-        skip: 0,
+        query: { search: "", sortBy: "status", order: "asc" },
+        pagination: { page: 1, limit: 10, skip: 0 },
       });
 
       expect(mockRepo.findAll).toHaveBeenCalledWith({
         userId: "user-123",
         filters: { search: "", sortBy: "status", order: "asc" },
-        page: 1,
-        limit: 10,
-        skip: 0,
+        pagination: { page: 1, limit: 10, skip: 0 },
       });
       expect(result.data.length).toBe(3);
     });
@@ -227,10 +217,8 @@ describe("Job Service", () => {
       await expect(
         jobService.getJobs({
           userId: "user-123",
-          filters: { search: "", sortBy: "createdAt", order: "desc" },
-          page: 1,
-          limit: 10,
-          skip: 0,
+          query: { search: "", sortBy: "createdAt", order: "desc" },
+          pagination: { page: 1, limit: 10, skip: 0 },
         })
       ).rejects.toThrow(DatabaseError);
     });
@@ -388,10 +376,8 @@ describe("Job Service", () => {
       await expect(
         jobService.getJobs({
           userId: "user-123",
-          filters: { search: "", sortBy: "createdAt", order: "desc" },
-          page: 1,
-          limit: 10,
-          skip: 0,
+          query: { search: "", sortBy: "createdAt", order: "desc" },
+          pagination: { page: 1, limit: 10, skip: 0 },
         })
       ).rejects.toThrow(DatabaseError);
     });

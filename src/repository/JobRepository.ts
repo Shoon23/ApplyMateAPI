@@ -1,31 +1,20 @@
-import { Prisma, Status } from "../../generated/prisma";
-import DatabaseError from "../errors/DatabaseError";
+import { Status } from "../../generated/prisma";
+import { CreateJobDTO, FindAllJobsDTO } from "../dto/job.dto";
 import NotFoundError from "../errors/NotFoundError";
 import {
   JobApplicationType,
   UpdateJobApplicationType,
 } from "../schema/jobSchema";
+import { WithUserId } from "../types/common";
 import logger from "../utils/logger";
 import BaseRepository from "./BaseRepository";
 export type CreateJobType = JobApplicationType & { userId: string };
 
-export type JobFilters = {
-  userId: string;
-  page: number;
-  limit: number;
-  skip: number;
-  filters: {
-    search: string;
-    sortBy: string;
-    order: string;
-  };
-};
-
 class JobRepository extends BaseRepository {
-  async findAll(params: JobFilters) {
+  async findAll(params: FindAllJobsDTO) {
     try {
-      const { userId, filters, limit, page, skip } = params;
-
+      const { userId, filters, pagination } = params;
+      const { limit, page, skip } = pagination;
       const where: any = {
         userId,
       };
@@ -67,7 +56,7 @@ class JobRepository extends BaseRepository {
         },
       };
     } catch (error) {
-      this.handleError(error, "Failed to finding jobs application");
+      this.handleError(error, "Failed to find jobs application");
     }
   }
 
@@ -84,7 +73,7 @@ class JobRepository extends BaseRepository {
     }
   }
 
-  async create(data: CreateJobType) {
+  async create(data: WithUserId<CreateJobDTO>) {
     try {
       return await this.prisma.jobApplication.create({
         data: data,

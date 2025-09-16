@@ -22,13 +22,6 @@ class JobController extends BaseController {
   handleGetJob = async (req: AuthRequest, res: Response) => {
     const user = this.requireAuth(req);
 
-    if (!req.user) {
-      throw new AuthError({
-        message: "Authentication Failed",
-        property: "token",
-      });
-    }
-
     const jobData = await this.jobService.getJobById(
       req.params.id,
       user.userId
@@ -39,19 +32,10 @@ class JobController extends BaseController {
   handleGetJobs = async (req: AuthRequest, res: Response) => {
     const user = this.requireAuth(req);
 
-    const { limit, page, skip } = this.getPagination(req);
-    const filters = {
-      search: (req.query.search as string) || "",
-      sortBy: (req.query.sortBy as string) || "APPLIED",
-      order: (req.query.order as string) || "desc",
-    };
-
     const jobsdata = await this.jobService.getJobs({
-      filters,
-      limit,
-      page,
-      skip,
       userId: user.userId,
+      query: req.query,
+      pagination: this.getPagination(req),
     });
     res.status(200).json(jobsdata);
   };

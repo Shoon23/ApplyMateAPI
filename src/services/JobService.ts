@@ -2,17 +2,23 @@ import {
   JobApplicationType,
   UpdateJobApplicationType,
 } from "../schema/jobSchema";
-import JobRepository, {
-  CreateJobType,
-  JobFilters,
-} from "../repository/JobRepository";
+import JobRepository, { CreateJobType } from "../repository/JobRepository";
 import logger from "../utils/logger";
 import NotFoundError from "../errors/NotFoundError";
+import {
+  CreateJobDTO,
+  JobFiltersDTO,
+  JobQueryDTO,
+  PaginatedJobsDTO,
+  UpdateJobDTO,
+} from "../dto/job.dto";
+import { WithIdAndUser, WithUserId } from "../types/common";
+import { toJobDTO } from "../mapppers/job.mapper";
 
 class JobService {
   constructor(private jobRepo: JobRepository) {}
 
-  async createJobApplication(data: CreateJobType) {
+  async createJobApplication(data: WithUserId<CreateJobDTO>) {
     logger.info("Creating job application", {
       company: data.company,
       position: data.position,
@@ -29,7 +35,7 @@ class JobService {
       jobId: jobData.id,
       userId: jobData.userId,
     });
-    return jobData;
+    return toJobDTO(jobData);
   }
   async getJobById(id: string, userId: string) {
     logger.info("Fetching job application", { jobId: id, userId });
@@ -49,19 +55,27 @@ class JobService {
       userId: jobData.userId,
     });
 
-    return jobData;
+    return toJobDTO(jobData);
   }
 
-  async getJobs(data: JobFilters) {
+  async getJobs(data: JobQueryDTO): Promise<PaginatedJobsDTO> {
+    const filters: JobFiltersDTO = {
+      search: (data.query.search as string) ?? "",
+      sortBy: (data.query.sortBy as string) ?? "APPLIED",
+      order: data.query.order ?? "desc",
+    };
     logger.info("Fetching jobs list", {
       userId: data.userId,
-      search: data.filters.search || null,
-      sortBy: data.filters.sortBy || "createdAt",
-      order: data.filters.order || "desc",
-      page: data.page,
-      limit: data.limit,
+      ...filters,
+      page: data.pagination,
+      limit: data.pagination,
     });
-    const jobsData = await this.jobRepo.findAll(data);
+
+    const jobsData = await this.jobRepo.findAll({
+      userId: data.userId,
+      pagination: data.pagination,
+      filters,
+    });
     logger.info("Jobs fetched successfully", {
       total: jobsData.meta.total,
       page: jobsData.meta.page,
@@ -69,12 +83,13 @@ class JobService {
       totalPages: jobsData.meta.totalPages,
     });
 
-    return jobsData;
+    return {
+      data: jobsData.data.map(toJobDTO), // ✅ Normalize each job
+      meta: jobsData.meta,
+    };
   }
 
-  async updateJob(
-    data: UpdateJobApplicationType & { id: string; userId: string }
-  ) {
+  async updateJob(data: WithIdAndUser<UpdateJobDTO>) {
     logger.info("Updating job application", {
       jobId: data.id,
       userId: data.userId,

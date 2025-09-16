@@ -24,7 +24,8 @@ const user = {
   id: "1a2b3c4d",
   email: "alice@example.com",
   name: "Alice Johnson",
-  password: "hashedPassword123", // this is the hashed password stored
+  password: "hashedPassword123",
+  createdAt: new Date(),
 };
 
 describe("Auth Service", () => {
