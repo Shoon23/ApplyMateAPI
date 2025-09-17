@@ -27,7 +27,10 @@ const generateRefreshToken = (userId: string): string => {
     });
   }
 };
-const verifyToken = (token: string, isRefresh = false): JwtPayload => {
+const verifyToken = (
+  token: string,
+  isRefresh = false
+): JwtPayload & { userId: string } => {
   try {
     const secret = isRefresh
       ? (config.REFRESH_TOKEN_SECRET as string)
@@ -35,10 +38,10 @@ const verifyToken = (token: string, isRefresh = false): JwtPayload => {
 
     const decoded = jwt.verify(token, secret);
 
-    return decoded as JwtPayload;
+    return decoded as JwtPayload & { userId: string };
   } catch (error) {
     throw new AuthError({
-      message: "Invalid or expired token",
+      message: "Your session has expired. Please log in again.",
       property: "token",
     });
   }

@@ -19,6 +19,7 @@ jest.mock("../../src/utils/hashPassword", () => ({
 jest.mock("../../src/utils/generateJwt", () => ({
   generateAccessToken: jest.fn(),
   generateRefreshToken: jest.fn(),
+  verifyToken: jest.fn(),
 }));
 
 const user = {

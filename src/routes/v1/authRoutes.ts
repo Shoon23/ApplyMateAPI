@@ -22,4 +22,6 @@ authRouter.post(
   authController.handleRegister
 );
 
+authRouter.post("/refresh", authController.handleRefresh);
+
 export default authRouter;

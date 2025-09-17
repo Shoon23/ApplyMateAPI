@@ -1,14 +1,16 @@
 import { ErrorRequestHandler } from "express";
 import CustomError from "../errors/CustomError";
 import logger from "../utils/logger";
+import config from "../config";
 
 const errorMiddleware: ErrorRequestHandler = (err, req, res, next) => {
   logger.error(err.message, {
-    stack: err.stack,
+    ...(config.NODE_ENV === "development" && { stack: err.stack }),
+    errorType: err.errorType,
+    errors: err.serializeErrors(),
     name: err.name,
     path: req.path,
     method: req.method,
-    body: req.body,
   });
   if (err instanceof CustomError) {
     return res

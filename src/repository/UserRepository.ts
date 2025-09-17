@@ -35,6 +35,23 @@ class UserRepository extends BaseRepository {
       this.handleError(error, "Failed to create account");
     }
   }
+
+  async findById(id: string) {
+    try {
+      return await this.prisma.user.findUnique({
+        where: { id },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          password: true,
+          createdAt: true,
+        },
+      });
+    } catch (error) {
+      this.handleError(error, "Failed to find User");
+    }
+  }
 }
 
 export default UserRepository;

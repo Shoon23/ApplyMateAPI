@@ -4,6 +4,7 @@ import { LoginDTO, RegisterDTO } from "../dto/auth.dto";
 import {
   generateAccessToken,
   generateRefreshToken,
+  verifyToken,
 } from "../utils/generateJwt";
 import { comparePassword, hashPassword } from "../utils/hashPassword";
 import logger from "../utils/logger";
@@ -73,6 +74,30 @@ class AuthService {
     const refreshToken = generateRefreshToken(createdUser.id);
     return {
       user: toUserDTO(createdUser),
+      accessToken,
+      refreshToken,
+    };
+  }
+
+  async refresh(token: string) {
+    const decoded = verifyToken(token, true);
+
+    const user = await this.userRepo.findById(decoded.userId);
+
+    if (!user) {
+      logger.warn(`Refresh failed: user not found (userId=${decoded.userId})`);
+
+      throw new AuthError({
+        property: "",
+        message: "User Not Found",
+      });
+    }
+
+    const accessToken = generateAccessToken(user.id);
+    const refreshToken = generateRefreshToken(user.id);
+
+    return {
+      user: toUserDTO(user),
       accessToken,
       refreshToken,
     };

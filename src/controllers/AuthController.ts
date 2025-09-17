@@ -3,6 +3,8 @@ import AuthService from "../services/AuthService";
 import { Request, Response } from "express";
 import BaseController from "./BaseController";
 import config from "../config";
+import AuthError from "../errors/AuthError";
+import logger from "../utils/logger";
 class AuthController extends BaseController {
   constructor(private authService: AuthService) {
     super();
@@ -22,7 +24,25 @@ class AuthController extends BaseController {
     this.setCookie(res, refreshToken);
     res.status(201).json(rest);
   };
+  handleRefresh = async (req: Request, res: Response) => {
+    const refreshToken = await req.cookies.refreshToken;
+    if (!refreshToken) {
+      logger.warn("Refresh token missing from request cookies");
+      throw new AuthError({
+        property: "token",
+        message: "Your session has expired. Please log in again.",
+      });
+    }
+    logger.info("Received refresh token request");
 
+    const result = await this.authService.refresh(refreshToken);
+    const { refreshToken: newRefreshToken, ...rest } = result;
+
+    this.setCookie(res, newRefreshToken);
+    logger.info(`Issued new access/refresh token for userId=${rest.user.id}`);
+
+    res.status(201).json(rest);
+  };
   private setCookie(res: Response, refreshToken: string) {
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
