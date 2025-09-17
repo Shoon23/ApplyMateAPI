@@ -29,6 +29,7 @@ class AuthController extends BaseController {
       secure: config.NODE_ENV === "production",
       sameSite: "strict",
       path: "/api/v1/auth/refresh",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
     });
   }
 }

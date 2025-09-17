@@ -5,6 +5,7 @@ import { comparePassword, hashPassword } from "../../src/utils/hashPassword";
 import {
   generateAccessToken,
   generateRefreshToken,
+  verifyToken,
 } from "../../src/utils/generateJwt";
 import DatabaseError from "../../src/errors/DatabaseError";
 import { Prisma } from "../../generated/prisma";
@@ -260,6 +261,48 @@ describe("Auth Service", () => {
 
       // should not expose password
       expect(result).not.toHaveProperty("password");
+    });
+  });
+
+  describe("Refresh User Tokens", () => {
+    it("should throw AuthError if no user is found", async () => {
+      (verifyToken as jest.Mock).mockReturnValue({ userId: user.id });
+      mockRepo.findById = jest.fn().mockResolvedValue(null);
+
+      await expect(
+        authService.refresh("valid-refresh-token")
+      ).rejects.toBeInstanceOf(AuthError);
+    });
+
+    it("should throw AuthError if refresh token is invalid", async () => {
+      (verifyToken as jest.Mock).mockImplementation(() => {
+        throw new AuthError({
+          message: "Invalid or expired token",
+          property: "token",
+        });
+      });
+
+      await expect(authService.refresh("bad-token")).rejects.toBeInstanceOf(
+        AuthError
+      );
+    });
+
+    it("should generate new tokens if refresh token is valid", async () => {
+      (verifyToken as jest.Mock).mockReturnValue({ userId: user.id });
+      mockRepo.findById = jest.fn().mockResolvedValue(user);
+
+      (generateAccessToken as jest.Mock).mockReturnValue("new-access-token");
+      (generateRefreshToken as jest.Mock).mockReturnValue("new-refresh-token");
+
+      const result = await authService.refresh("valid-refresh-token");
+
+      expect(verifyToken).toHaveBeenCalledWith("valid-refresh-token", true);
+      expect(mockRepo.findById).toHaveBeenCalledWith(user.id);
+
+      expect(result).toStrictEqual({
+        accessToken: "new-access-token",
+        refreshToken: "new-refresh-token",
+      });
     });
   });
 });
