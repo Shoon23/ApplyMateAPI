@@ -217,4 +217,79 @@ describe("Auth Integration", () => {
       expect(emailError.message).toMatch(/already registered/i);
     });
   });
+
+  describe("POST /api/v1/auth/refresh", () => {
+    const url = "/api/v1/auth/refresh";
+    let cookies: string[];
+
+    beforeEach(async () => {
+      // login to get valid refresh token cookie
+      const res = await request(app).post("/api/v1/auth/login").send({
+        email: testUser.email,
+        password: testUser.password,
+      });
+
+      cookies = res.headers["set-cookie"] as any;
+    });
+
+    it("should return 200 and a new access token if refresh token is valid", async () => {
+      const res = await request(app)
+        .post(url)
+        .set("Cookie", cookies)
+        .expect(201);
+
+      expect(res.body).toHaveProperty("accessToken");
+      expect(typeof res.body.accessToken).toBe("string");
+
+      const newCookies = res.headers["set-cookie"] as any;
+      expect(newCookies).toBeDefined();
+      const refreshCookie = newCookies.find((c: string) =>
+        c.startsWith("refreshToken=")
+      );
+      expect(refreshCookie).toBeDefined();
+    });
+
+    it("should return 401 if refresh token cookie is missing", async () => {
+      const res = await request(app).post(url).expect(401);
+
+      expect(res.body.errorType).toBe("AUTH_ERROR");
+      expect(Array.isArray(res.body.errors)).toBe(true);
+      expect(res.body.errors[0].message).toMatch(
+        /Your session has expired. Please log in again./i
+      );
+    });
+
+    it("should return 401 if refresh token is invalid", async () => {
+      const res = await request(app)
+        .post(url)
+        .set("Cookie", ["refreshToken=invalidtoken"])
+        .expect(401);
+
+      expect(res.body.errorType).toBe("AUTH_ERROR");
+      expect(Array.isArray(res.body.errors)).toBe(true);
+      expect(res.body.errors[0].message).toMatch(/Invalid|expired/i);
+    });
+
+    it("should return 401 if user from token does not exist", async () => {
+      await prisma.user.deleteMany({ where: { email: testUser.email } });
+
+      const res = await request(app)
+        .post(url)
+        .set("Cookie", cookies)
+        .expect(401);
+
+      expect(res.body.errorType).toBe("AUTH_ERROR");
+      expect(Array.isArray(res.body.errors)).toBe(true);
+      expect(res.body.errors[0].message).toMatch(/User not found/i);
+
+      const hashed = await hashPassword(testUser.password);
+      await prisma.user.create({
+        data: {
+          email: testUser.email,
+          name: testUser.name,
+          password: hashed,
+        },
+      });
+    });
+  });
 });
