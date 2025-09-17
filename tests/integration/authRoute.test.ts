@@ -41,9 +41,15 @@ describe("Auth Integration", () => {
         .expect(200);
 
       expect(res.body).toHaveProperty("accessToken");
-      expect(res.body).toHaveProperty("refreshToken");
       expect(res.body.user.email).toBe(testUser.email);
       expect(res.body.user.name).toBe(testUser.name);
+      const cookies = res.headers["set-cookie"] as any;
+      expect(cookies).toBeDefined();
+
+      const refreshCookie = cookies?.find((c: string) =>
+        c.startsWith("refreshToken=")
+      );
+      expect(refreshCookie).toBeDefined();
     });
 
     it("should return 401 for invalid password", async () => {
@@ -135,11 +141,17 @@ describe("Auth Integration", () => {
       const res = await request(app).post(url).send(newUser).expect(201);
 
       expect(res.body).toHaveProperty("accessToken");
-      expect(res.body).toHaveProperty("refreshToken");
+
       expect(res.body.user).toHaveProperty("id");
       expect(res.body.user.email).toBe(newUser.email);
       expect(res.body.user.name).toBe(newUser.name);
       expect(res.body.user).not.toHaveProperty("password");
+      const cookies = res.headers["set-cookie"] as any;
+      expect(cookies).toBeDefined();
+      const refreshCookie = cookies.find((c: string) =>
+        c.startsWith("refreshToken=")
+      );
+      expect(refreshCookie).toBeDefined();
     });
 
     it("should return 400 if fields are missing", async () => {
