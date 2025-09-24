@@ -5,4 +5,5 @@ export default {
   LOG_LEVEL: process.env.LOG_LEVEL,
   ACCESS_TOKEN_SECRET: process.env.ACCESS_TOKEN_SECRET,
   REFRESH_TOKEN_SECRET: process.env.REFRESH_TOKEN_SECRET,
+  GEMINI_API_KEY: process.env.GEMINI_API_KEY,
 };

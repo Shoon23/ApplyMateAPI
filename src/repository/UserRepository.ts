@@ -1,7 +1,9 @@
 import { Prisma } from "../../generated/prisma";
 import { RegisterDTO } from "../dto/auth.dto";
+import { UserProfileDTO } from "../dto/user.dto";
 import AuthError from "../errors/AuthError";
 import DatabaseError from "../errors/DatabaseError";
+import { WithUserId } from "../types/common";
 import BaseRepository from "./BaseRepository";
 
 class UserRepository extends BaseRepository {

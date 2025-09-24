@@ -303,6 +303,12 @@ describe("Auth Service", () => {
       expect(result).toStrictEqual({
         accessToken: "new-access-token",
         refreshToken: "new-refresh-token",
+        user: {
+          createdAt: user.createdAt,
+          email: user.email,
+          id: user.id,
+          name: user.name,
+        },
       });
     });
   });

@@ -1,12 +1,12 @@
 import { Router } from "express";
 import authRoutes from "./authRoutes";
 import jobRoutes from "./jobRoutes";
-import { authMiddeware } from "../../middlewares/authMiddeware";
+import userRoutes from "./userRoutes";
+import { authMiddleware } from "../../middlewares/authMiddeware";
 const router = Router();
 
 router.use("/auth", authRoutes);
 
-router.use(authMiddeware);
-router.use("/jobs", jobRoutes);
-
+router.use("/jobs", authMiddleware, jobRoutes);
+router.use("/profile", authMiddleware, userRoutes);
 export default router;

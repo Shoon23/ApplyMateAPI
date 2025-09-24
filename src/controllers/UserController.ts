@@ -1,0 +1,54 @@
+import { Request, Response } from "express";
+import LLMService from "../services/LLMService";
+import UserService from "../services/UserService";
+import BaseController from "./BaseController";
+import { AuthRequest } from "../types/auth";
+import NotFoundError from "../errors/NotFoundError";
+import pdf from "pdf-parse";
+import logger from "../utils/logger";
+import ValidationError from "../errors/ValidationError";
+
+class UserController extends BaseController {
+  constructor(private userService: UserService) {
+    super();
+  }
+  handleCreateProfile = async (req: AuthRequest, res: Response) => {
+    const user = this.requireAuth(req);
+    const resumeFile = req.file?.buffer;
+    logger.info("Create Profile request started", { userId: user.userId });
+
+    if (!resumeFile) {
+      logger.warn("No file uploaded", { userId: user.userId });
+      throw new ValidationError([
+        {
+          message: "No File Upload",
+          property: "file",
+        },
+      ]);
+    }
+    logger.debug("File uploaded", {
+      userId: user.userId,
+      fileSize: resumeFile.byteLength,
+    });
+    const resumeData = await pdf(resumeFile);
+
+    if (!resumeData.text) {
+      logger.warn("Uploaded file is blank", { userId: user.userId });
+
+      throw new NotFoundError({
+        message: "File is blank",
+        property: "file",
+      });
+    }
+
+    const result = await this.userService.createProfile(
+      resumeData.text,
+      user.userId
+    );
+    logger.info("Profile created successfully", { userId: user.userId });
+
+    res.status(201).json(result);
+  };
+}
+
+export default UserController;

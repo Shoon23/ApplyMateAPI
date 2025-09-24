@@ -7,7 +7,7 @@ export interface AuthRequest extends Request {
   user?: JwtPayload; // attach user payload
 }
 
-export const authMiddeware = (
+export const authMiddleware = (
   req: AuthRequest,
   res: Response,
   next: NextFunction

@@ -5,7 +5,9 @@ import config from "../config";
 
 const errorMiddleware: ErrorRequestHandler = (err, req, res, next) => {
   logger.error(err.message, {
-    ...(config.NODE_ENV === "development" && { stack: err.stack }),
+    ...(config.NODE_ENV === "development" && {
+      stack: err.stack,
+    }),
     errorType: err.errorType,
     errors: err.serializeErrors(),
     name: err.name,

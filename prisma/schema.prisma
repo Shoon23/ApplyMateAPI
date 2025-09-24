@@ -21,9 +21,21 @@ model User {
   name String
   password String
   jobs JobApplication[]
+  profile UserProfile?
   createdAt DateTime @default(now())
 }
-
+model UserProfile {
+  id         String   @id @default(uuid())
+  userId     String   @unique
+  user       User     @relation(fields: [userId], references: [id])
+  contact    Json 
+  skills     Json     
+  experience Json     
+  education  Json     
+  resumeText String?  
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
 
 model JobApplication {
   id String @id @default(uuid())
@@ -40,6 +52,15 @@ model JobApplication {
   userId String
   user User @relation(fields: [userId],references: [id])
   notes Notes[]
+  description Description?
+}
+
+
+model Description {
+  id String @id @default(uuid())
+  description String?
+  jobId String @unique
+  job JobApplication @relation(fields: [jobId],references: [id])
 }
 
 model Notes {
