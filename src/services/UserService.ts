@@ -1,4 +1,5 @@
 import DuplicateError from "../errors/DuplicateError";
+import NotFoundError from "../errors/NotFoundError";
 import { toUserProfileDTO } from "../mapppers/user.mapper";
 import UserProfileRepostory from "../repository/UserProfileRepository";
 import UserRepository from "../repository/UserRepository";
@@ -27,7 +28,24 @@ class UserService {
       userId,
     });
     logger.info("Profile saved", { userId, profileId: savedData.id });
-    return savedData;
+    return toUserProfileDTO(savedData);
+  }
+
+  async getProfile(id: string, userId: string) {
+    const profileData = await this.userProfileRepo.findByIdAndUserId(
+      id,
+      userId
+    );
+
+    if (!profileData) {
+      logger.warn("Profile Not Found", { userId });
+      throw new NotFoundError({
+        message: "Profile Not Found",
+        property: "id",
+      });
+    }
+
+    return toUserProfileDTO(profileData);
   }
 }
 

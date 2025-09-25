@@ -1,10 +1,10 @@
 import { Prisma } from "../../generated/prisma";
-import { UserProfileDTO } from "../dto/user.dto";
+import { ExtractedUserProfileDTO, UserProfileDTO } from "../dto/user.dto";
 import { WithUserId } from "../types/common";
 import BaseRepository from "./BaseRepository";
 
 class UserProfileRepostory extends BaseRepository {
-  async createProfile(data: WithUserId<UserProfileDTO>) {
+  async createProfile(data: WithUserId<ExtractedUserProfileDTO>) {
     try {
       const { userId, contact, education, experience, skills } = data;
 
@@ -22,11 +22,12 @@ class UserProfileRepostory extends BaseRepository {
     }
   }
 
-  async findById(id: string) {
+  async findByIdAndUserId(id: string, userId: string) {
     try {
-      return await this.prisma.userProfile.findUnique({
+      return await this.prisma.userProfile.findFirst({
         where: {
           id,
+          userId,
         },
       });
     } catch (error) {

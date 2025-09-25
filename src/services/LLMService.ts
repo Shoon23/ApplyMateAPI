@@ -1,6 +1,9 @@
 import { GoogleGenAI } from "@google/genai";
 import LLMExtractionError from "../errors/LLMExtractionError";
-import { toUserProfileDTO } from "../mapppers/user.mapper";
+import {
+  toExtractedUserProfileDTO,
+  toUserProfileDTO,
+} from "../mapppers/user.mapper";
 import logger from "../utils/logger";
 class LLMService {
   private genAI: GoogleGenAI;
@@ -100,7 +103,7 @@ JSON string Schema:
       );
     }
     logger.info("LLM extraction successful");
-    return toUserProfileDTO(raw);
+    return toExtractedUserProfileDTO(raw);
   }
 }
 

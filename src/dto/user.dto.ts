@@ -4,8 +4,7 @@ export type UserDTO = {
   email: string;
   createdAt: Date;
 };
-
-export interface UserProfileDTO {
+export interface ExtractedUserProfileDTO {
   contact: {
     name: string | null;
     email: string | null;
@@ -29,4 +28,12 @@ export interface UserProfileDTO {
         year: string | null;
       }[]
     | null;
+}
+
+export interface UserProfileDTO extends ExtractedUserProfileDTO {
+  createdAt: Date;
+  updatedAt: Date;
+  id: string;
+  userId: string;
+  resumeText: string | null;
 }

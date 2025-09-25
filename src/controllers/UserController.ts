@@ -49,6 +49,20 @@ class UserController extends BaseController {
 
     res.status(201).json(result);
   };
+
+  handleGetProfile = async (req: AuthRequest, res: Response) => {
+    const user = this.requireAuth(req);
+    const profileId = req.params.id;
+    logger.info("Get Profile request started", { userId: user.userId });
+
+    const result = await this.userService.getProfile(profileId, user.userId);
+    logger.info(`Profile Found`, {
+      id: result.id,
+      userId: result.userId,
+    });
+
+    res.status(200).json(result);
+  };
 }
 
 export default UserController;
