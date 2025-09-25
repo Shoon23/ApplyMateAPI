@@ -4,6 +4,7 @@ import UserProfileRepostory from "../../src/repository/UserProfileRepository";
 import DatabaseError from "../../src/errors/DatabaseError";
 import LLMExtractionError from "../../src/errors/LLMExtractionError";
 import DuplicateError from "../../src/errors/DuplicateError";
+import NotFoundError from "../../src/errors/NotFoundError";
 
 describe("UserService", () => {
   let userService: UserService;
@@ -52,11 +53,12 @@ describe("UserService", () => {
 
     mockLLMService = {
       extractUserProfile: jest.fn(),
+      getProfile: jest.fn(),
     } as any;
 
     mockUserRepository = {
       createProfile: jest.fn(),
-      findById: jest.fn(),
+      findByIdAndUserId: jest.fn(),
       findByUserId: jest.fn(),
     } as any;
 
@@ -152,6 +154,54 @@ describe("UserService", () => {
       );
 
       expect(result.skills).toEqual(["JavaScript"]);
+    });
+  });
+
+  describe("Get User Profile", () => {
+    it("it should return user profile", async () => {
+      mockUserRepository.findByIdAndUserId.mockResolvedValue(mockUserProfile);
+
+      const result = await userService.getProfile(
+        mockUserProfile.id,
+        mockUserId
+      );
+
+      expect(mockUserRepository.findByIdAndUserId).toHaveBeenCalledWith(
+        mockUserProfile.id,
+        mockUserId
+      );
+
+      expect(result).toEqual(mockUserProfile);
+    });
+
+    it("should return NotFoundError if profile is not found", async () => {
+      mockUserRepository.findByIdAndUserId.mockResolvedValue(null);
+
+      await expect(
+        userService.getProfile("non-existent-id", "user-123")
+      ).rejects.toBeInstanceOf(NotFoundError);
+
+      expect(mockUserRepository.findByIdAndUserId).toHaveBeenCalledWith(
+        "non-existent-id",
+        "user-123"
+      );
+    });
+
+    it("should throw DatabaseError if findByIdAndUserId fails", async () => {
+      mockUserRepository.findByIdAndUserId.mockRejectedValue(
+        new DatabaseError(new Error("DB find error"), "Something Went wrong")
+      );
+
+      await expect(
+        userService.getProfile(mockUserProfile.id, mockUserId)
+      ).rejects.toBeInstanceOf(DatabaseError);
+    });
+    it("should throw NotFoundError if profile exists but belongs to another user", async () => {
+      mockUserRepository.findByIdAndUserId.mockResolvedValue(null);
+
+      await expect(
+        userService.getProfile(mockUserProfile.id, "wrong-user-id")
+      ).rejects.toBeInstanceOf(NotFoundError);
     });
   });
 });
