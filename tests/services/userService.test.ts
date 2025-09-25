@@ -159,33 +159,27 @@ describe("UserService", () => {
 
   describe("Get User Profile", () => {
     it("it should return user profile", async () => {
-      mockUserRepository.findByIdAndUserId.mockResolvedValue(mockUserProfile);
+      mockUserRepository.findByUserId.mockResolvedValue(mockUserProfile);
 
       const result = await userService.getProfile(mockUserId);
 
-      expect(mockUserRepository.findByIdAndUserId).toHaveBeenCalledWith(
-        mockUserProfile.id,
-        mockUserId
-      );
+      expect(mockUserRepository.findByUserId).toHaveBeenCalledWith(mockUserId);
 
       expect(result).toEqual(mockUserProfile);
     });
 
     it("should return NotFoundError if profile is not found", async () => {
-      mockUserRepository.findByIdAndUserId.mockResolvedValue(null);
+      mockUserRepository.findByUserId.mockResolvedValue(null);
 
       await expect(userService.getProfile("user-123")).rejects.toBeInstanceOf(
         NotFoundError
       );
 
-      expect(mockUserRepository.findByIdAndUserId).toHaveBeenCalledWith(
-        "non-existent-id",
-        "user-123"
-      );
+      expect(mockUserRepository.findByUserId).toHaveBeenCalledWith("user-123");
     });
 
     it("should throw DatabaseError if findByIdAndUserId fails", async () => {
-      mockUserRepository.findByIdAndUserId.mockRejectedValue(
+      mockUserRepository.findByUserId.mockRejectedValue(
         new DatabaseError(new Error("DB find error"), "Something Went wrong")
       );
 

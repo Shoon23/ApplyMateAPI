@@ -90,4 +90,32 @@ describe("User Route Integration", () => {
       expect(res.body.errors[0].message).toMatch(/No File Upload/i);
     });
   });
+
+  describe("GET /api/v1/profile", () => {
+    it("should return a user profile", async () => {
+      const res = await request(app)
+        .get("/api/v1/profile")
+        .set("Authorization", `Bearer ${accessToken}`)
+        .expect(200);
+
+      expect(res.body).toHaveProperty("id");
+      expect(res.body).toHaveProperty("userId");
+      expect(res.body).toBeDefined();
+    });
+    it("should return 401 if no access token is provided", async () => {
+      const res = await request(app).get("/api/v1/profile").expect(401);
+
+      expect(res.body).toHaveProperty("errorType");
+      expect(res.body.errorType).toMatch(/AUTH_ERROR/i);
+    });
+    it("should return 401 if access token ics invalid", async () => {
+      const res = await request(app)
+        .get("/api/v1/profile")
+        .set("Authorization", "Bearer invalidtoken123")
+        .expect(401);
+
+      expect(res.body).toHaveProperty("errorType");
+      expect(res.body.errorType).toMatch(/AUTH_ERROR/i);
+    });
+  });
 });
