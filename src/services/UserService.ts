@@ -31,11 +31,8 @@ class UserService {
     return toUserProfileDTO(savedData);
   }
 
-  async getProfile(id: string, userId: string) {
-    const profileData = await this.userProfileRepo.findByIdAndUserId(
-      id,
-      userId
-    );
+  async getProfile(userId: string) {
+    const profileData = await this.userProfileRepo.findByUserId(userId);
 
     if (!profileData) {
       logger.warn("Profile Not Found", { userId });

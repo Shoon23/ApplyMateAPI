@@ -20,9 +20,5 @@ userRouter.post(
   uploadMiddleware.single("file"),
   userController.handleCreateProfile
 );
-userRouter.get(
-  "/:id",
-  validateReqParam(UserProfileIDSchema),
-  userController.handleGetProfile
-);
+userRouter.get("/", userController.handleGetProfile);
 export default userRouter;
