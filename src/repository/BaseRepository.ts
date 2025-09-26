@@ -11,25 +11,22 @@ class BaseRepository {
     this.prisma = prisma;
   }
   protected handleError(error: unknown, message: string): never {
-    logger.error(error);
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
-      if (error.code === "P2025") {
-        throw new NotFoundError({
-          message: "Data Not Found",
-        });
+      switch (error.code) {
+        case "P2025":
+          throw new NotFoundError({ message: "Data Not Found" });
+        case "P2002":
+          throw new DuplicateError({ message: "Duplicate resource found" });
+        default:
+          throw new DatabaseError(error, message);
       }
-      if (error.code === "P2002") {
-        const target = (error.meta?.target as string[])?.join(", ") ?? "field";
-        throw new DuplicateError({
-          message: "Duplicate resource found",
-        });
-      }
-      throw new DatabaseError(error, message);
     }
 
     if (error instanceof CustomError) {
       throw error;
     }
+
+    // fallback for unknown errors
     throw new DatabaseError(error as Error, message);
   }
 }

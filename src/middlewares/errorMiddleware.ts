@@ -4,16 +4,15 @@ import logger from "../utils/logger";
 import config from "../config";
 
 const errorMiddleware: ErrorRequestHandler = (err, req, res, next) => {
-  logger.error(err.message, {
-    ...(config.NODE_ENV === "development" && {
-      stack: err.stack,
-    }),
-    errorType: err.errorType,
-    errors: err.serializeErrors(),
-    name: err.name,
-    path: req.path,
-    method: req.method,
-  });
+  logger.error(err.stack);
+  // logger.error(err, {
+  //   ...(config.NODE_ENV === "development" && {
+  //     stack: err.stack,
+  //   }),
+  //   name: err.name,
+  //   path: req.path,
+  //   method: req.method,
+  // });
   if (err instanceof CustomError) {
     return res
       .status(err.statusCode)

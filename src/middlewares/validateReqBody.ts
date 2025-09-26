@@ -5,6 +5,15 @@ import Joi from "joi";
 
 export const validateReqBody = (schema: Joi.ObjectSchema) => {
   return (req: Request, res: Response, next: NextFunction) => {
+    if (!req.body || Object.keys(req.body).length === 0) {
+      throw new ValidationError([
+        {
+          message: "Request body is required",
+          property: "body",
+        },
+      ]);
+    }
+
     const { error, value } = schema.validate(req.body, { abortEarly: false });
     if (error) {
       logger.warn("Validation Failed", {

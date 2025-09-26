@@ -1,20 +1,22 @@
 import { Prisma } from "../../generated/prisma";
-import { ExtractedUserProfileDTO, UserProfileDTO } from "../dto/user.dto";
+import {
+  ExtractedUserProfileDTO,
+  UpdateUserProfileDTO,
+  UserProfileDTO,
+} from "../dto/user.dto";
 import { WithUserId } from "../types/common";
 import BaseRepository from "./BaseRepository";
 
 class UserProfileRepostory extends BaseRepository {
-  async createProfile(data: WithUserId<ExtractedUserProfileDTO>) {
+  async createProfile(data: Prisma.UserProfileCreateInput) {
     try {
-      const { userId, contact, education, experience, skills } = data;
-
-      return await this.prisma.userProfile.create({
-        data: {
-          userId,
-          contact: contact ?? Prisma.JsonNull,
-          education: education ?? Prisma.JsonNull,
-          experience: experience ?? Prisma.JsonNull,
-          skills: skills ?? Prisma.JsonNull,
+      return this.prisma.userProfile.create({
+        data,
+        include: {
+          contact: true,
+          skills: true,
+          experience: true,
+          education: true,
         },
       });
     } catch (error) {
@@ -34,6 +36,18 @@ class UserProfileRepostory extends BaseRepository {
       this.handleError(error, "Failed to find user profile");
     }
   }
+
+  async findById(id: string) {
+    try {
+      return await this.prisma.userProfile.findFirst({
+        where: {
+          id,
+        },
+      });
+    } catch (error) {
+      this.handleError(error, "Failed to find user profile");
+    }
+  }
   async findByUserId(userId: string) {
     try {
       return await this.prisma.userProfile.findUnique({
@@ -43,6 +57,19 @@ class UserProfileRepostory extends BaseRepository {
       });
     } catch (error) {
       this.handleError(error, "Failed to find user profile");
+    }
+  }
+
+  async update(id: string, data: UpdateUserProfileDTO) {
+    try {
+      // return await this.prisma.userProfile.update({
+      //   where: {
+      //     id,
+      //   },
+      //   data: data,
+      // });
+    } catch (error) {
+      this.handleError(error, "Failed to update user profile");
     }
   }
 }

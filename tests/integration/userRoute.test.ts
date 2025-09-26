@@ -16,9 +16,29 @@ describe("User Route Integration", () => {
   let accessToken: string;
 
   beforeAll(async () => {
-    await prisma.user.deleteMany({ where: { email: testUser.email } });
-    app = await initApp();
+    // Delete any existing test data manually in correct order
+    const existingUser = await prisma.user.findUnique({
+      where: { email: testUser.email },
+      include: { profile: true },
+    });
 
+    if (existingUser?.profile) {
+      const profileId = existingUser.profile.id;
+
+      // Delete all related child records first
+      await prisma.contact.deleteMany({ where: { profileId } });
+      await prisma.skill.deleteMany({ where: { profileId } });
+      await prisma.experience.deleteMany({ where: { profileId } });
+      await prisma.education.deleteMany({ where: { profileId } });
+
+      // Delete the profile itself
+      await prisma.userProfile.delete({ where: { id: profileId } });
+    }
+
+    // Delete the user
+    await prisma.user.deleteMany({ where: { email: testUser.email } });
+
+    // Now create fresh test user
     const hashed = await hashPassword(testUser.password);
     await prisma.user.create({
       data: {
@@ -28,21 +48,31 @@ describe("User Route Integration", () => {
       },
     });
 
+    // Initialize app and login
+    app = await initApp();
     const loginRes = await request(app)
       .post("/api/v1/auth/login")
-      .send({
-        email: testUser.email,
-        password: testUser.password,
-      })
+      .send({ email: testUser.email, password: testUser.password })
       .expect(200);
-
     accessToken = loginRes.body.accessToken;
   });
 
   afterAll(async () => {
-    await prisma.userProfile.deleteMany({
-      where: { user: { email: testUser.email } },
+    // Repeat same deletion process for cleanup
+    const existingUser = await prisma.user.findUnique({
+      where: { email: testUser.email },
+      include: { profile: true },
     });
+
+    if (existingUser?.profile) {
+      const profileId = existingUser.profile.id;
+      await prisma.contact.deleteMany({ where: { profileId } });
+      await prisma.skill.deleteMany({ where: { profileId } });
+      await prisma.experience.deleteMany({ where: { profileId } });
+      await prisma.education.deleteMany({ where: { profileId } });
+      await prisma.userProfile.delete({ where: { id: profileId } });
+    }
+
     await prisma.user.deleteMany({ where: { email: testUser.email } });
     await prisma.$disconnect();
   });

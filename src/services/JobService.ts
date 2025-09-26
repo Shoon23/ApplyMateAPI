@@ -13,7 +13,7 @@ import {
   UpdateJobDTO,
 } from "../dto/job.dto";
 import { WithIdAndUser, WithUserId } from "../types/common";
-import { toJobDTO } from "../mapppers/job.mapper";
+import JobMapper from "../mapppers/job.mapper";
 
 class JobService {
   constructor(private jobRepo: JobRepository) {}
@@ -35,7 +35,7 @@ class JobService {
       jobId: jobData.id,
       userId: jobData.userId,
     });
-    return toJobDTO(jobData);
+    return JobMapper.toJobDTO(jobData);
   }
   async getJobById(id: string, userId: string) {
     logger.info("Fetching job application", { jobId: id, userId });
@@ -55,7 +55,7 @@ class JobService {
       userId: jobData.userId,
     });
 
-    return toJobDTO(jobData);
+    return JobMapper.toJobDTO(jobData);
   }
 
   async getJobs(data: JobQueryDTO): Promise<PaginatedJobsDTO> {
@@ -84,7 +84,7 @@ class JobService {
     });
 
     return {
-      data: jobsData.data.map(toJobDTO), // ✅ Normalize each job
+      data: jobsData.data.map(JobMapper.toJobDTO),
       meta: jobsData.meta,
     };
   }

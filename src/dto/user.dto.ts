@@ -5,35 +5,48 @@ export type UserDTO = {
   createdAt: Date;
 };
 export interface ExtractedUserProfileDTO {
-  contact: {
-    name: string | null;
-    email: string | null;
-    phone: string | null;
-    linkedin: string | null;
-  };
-  skills: string[] | null;
-  experience:
-    | {
-        company: string | null;
-        role: string | null;
-        startDate: string | null;
-        endDate: string | null;
-        achievements: string[] | null;
-      }[]
-    | null;
-  education:
-    | {
-        degree: string | null;
-        institution: string | null;
-        year: string | null;
-      }[]
-    | null;
+  contact?: ContactDTO;
+  skills?: SkillDTO[];
+  experience?: ExperienceDTO[];
+  education?: EducationDTO[];
+}
+export interface ContactDTO {
+  name?: string;
+  email?: string;
+  phone?: string;
+  linkedin?: string;
+}
+
+export interface SkillDTO {
+  name: string;
+}
+
+export interface ExperienceDTO {
+  company?: string;
+  role?: string;
+  startDate?: Date;
+  endDate?: Date;
+  achievements?: string[];
+}
+
+export interface EducationDTO {
+  degree?: string;
+  institution?: string;
+  year?: string;
+}
+
+export type HybridArray<T> = T[] | { add?: T[]; remove?: string[] };
+export interface UpdateUserProfileDTO {
+  contact?: ContactDTO;
+  skills?: HybridArray<SkillDTO>;
+  experience?: HybridArray<ExperienceDTO>;
+  education?: HybridArray<EducationDTO>;
 }
 
 export interface UserProfileDTO extends ExtractedUserProfileDTO {
-  createdAt: Date;
-  updatedAt: Date;
   id: string;
   userId: string;
   resumeText: string | null;
+  createdAt: Date;
+  updatedAt: Date;
 }

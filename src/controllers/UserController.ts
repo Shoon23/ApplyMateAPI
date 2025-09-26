@@ -7,6 +7,7 @@ import NotFoundError from "../errors/NotFoundError";
 import pdf from "pdf-parse";
 import logger from "../utils/logger";
 import ValidationError from "../errors/ValidationError";
+import { UpdateUserProfileDTO } from "../dto/user.dto";
 
 class UserController extends BaseController {
   constructor(private userService: UserService) {
@@ -59,6 +60,23 @@ class UserController extends BaseController {
       id: result.id,
       userId: result.userId,
     });
+
+    res.status(200).json(result);
+  };
+
+  handleUpdateProfile = async (req: AuthRequest, res: Response) => {
+    const user = this.requireAuth(req);
+    const profileId = req.params.id;
+
+    console.log(req.body);
+    logger.info("Update Profile request started", { id: profileId });
+
+    const result = await this.userService.updateProfile(
+      profileId,
+      user.userId,
+      req.body as UpdateUserProfileDTO
+    );
+    logger.info("Profile Updated Succesfully", { id: profileId });
 
     res.status(200).json(result);
   };

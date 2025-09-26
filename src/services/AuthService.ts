@@ -8,7 +8,7 @@ import {
 } from "../utils/generateJwt";
 import { comparePassword, hashPassword } from "../utils/hashPassword";
 import logger from "../utils/logger";
-import { toUserDTO } from "../mapppers/user.mapper";
+import UserMapper from "../mapppers/user.mapper";
 
 class AuthService {
   constructor(private userRepo: UserRepository) {}
@@ -47,7 +47,7 @@ class AuthService {
     logger.info(`Login successful for email: ${userCredentials.email}`);
 
     return {
-      user: toUserDTO(user),
+      user: UserMapper.toUserDTO(user),
       accessToken,
       refreshToken,
     };
@@ -73,7 +73,7 @@ class AuthService {
     const accessToken = generateAccessToken(createdUser.id);
     const refreshToken = generateRefreshToken(createdUser.id);
     return {
-      user: toUserDTO(createdUser),
+      user: UserMapper.toUserDTO(createdUser),
       accessToken,
       refreshToken,
     };
@@ -97,7 +97,7 @@ class AuthService {
     const refreshToken = generateRefreshToken(user.id);
 
     return {
-      user: toUserDTO(user),
+      user: UserMapper.toUserDTO(user),
       accessToken,
       refreshToken,
     };
