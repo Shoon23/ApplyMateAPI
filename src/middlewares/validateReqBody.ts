@@ -16,9 +16,6 @@ export const validateReqBody = (schema: Joi.ObjectSchema) => {
 
     const { error, value } = schema.validate(req.body, { abortEarly: false });
     if (error) {
-      logger.warn("Validation Failed", {
-        url: req.path,
-      });
       const errors = error.details.map((err) => ({
         message: err.message,
         property: err.path[0],

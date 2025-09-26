@@ -66,17 +66,14 @@ class UserController extends BaseController {
 
   handleUpdateProfile = async (req: AuthRequest, res: Response) => {
     const user = this.requireAuth(req);
-    const profileId = req.params.id;
 
-    console.log(req.body);
-    logger.info("Update Profile request started", { id: profileId });
+    logger.info("Update Profile request started", { userId: user.userId });
 
     const result = await this.userService.updateProfile(
-      profileId,
       user.userId,
       req.body as UpdateUserProfileDTO
     );
-    logger.info("Profile Updated Succesfully", { id: profileId });
+    logger.info("Profile Updated Succesfully", { userId: user.userId });
 
     res.status(200).json(result);
   };

@@ -24,8 +24,8 @@ export interface SkillDTO {
 export interface ExperienceDTO {
   company?: string;
   role?: string;
-  startDate?: Date;
-  endDate?: Date;
+  startDate?: string;
+  endDate?: string;
   achievements?: string[];
 }
 
@@ -40,6 +40,7 @@ export interface UpdateUserProfileDTO {
   contact?: ContactDTO;
   skills?: HybridArray<SkillDTO>;
   experience?: HybridArray<ExperienceDTO>;
+
   education?: HybridArray<EducationDTO>;
 }
 

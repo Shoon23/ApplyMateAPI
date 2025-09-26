@@ -6,6 +6,7 @@ import {
   ExtractedUserProfileDTO,
   HybridArray,
   SkillDTO,
+  UpdateUserProfileDTO,
   UserDTO,
   UserProfileDTO,
 } from "../dto/user.dto";
@@ -58,10 +59,24 @@ class UserMapper {
             create: dto.education,
           }
         : undefined,
+      skills: dto.skills ? { create: dto.skills } : undefined,
     };
     return input;
   }
+  static toUpateProfileInput(
+    dto: UpdateUserProfileDTO
+  ): Prisma.UserProfileUpdateInput {
+    const input: Prisma.UserProfileUpdateInput = {};
+    if (dto.contact)
+      input.contact = { upsert: { update: dto.contact, create: dto.contact } };
+    if (dto.skills) input.skills = this.mapHybridArray<SkillDTO>(dto.skills);
+    if (dto.experience)
+      input.experience = this.mapHybridArray<ExperienceDTO>(dto.experience);
+    if (dto.education)
+      input.education = this.mapHybridArray<EducationDTO>(dto.education);
 
+    return input;
+  }
   private static mapHybridArray<T>(
     value: HybridArray<T>,
     uniqueField: keyof T = "id" as keyof T

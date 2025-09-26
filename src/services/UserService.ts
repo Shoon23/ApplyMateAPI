@@ -8,6 +8,7 @@ import UserRepository from "../repository/UserRepository";
 import { WithIdAndUser } from "../types/common";
 import logger from "../utils/logger";
 import LLMService from "./LLMService";
+import util from "util";
 
 class UserService {
   constructor(
@@ -47,8 +48,8 @@ class UserService {
     return UserMapper.toUserProfileDTO(profileData);
   }
 
-  async updateProfile(id: string, userId: string, data: UpdateUserProfileDTO) {
-    const profile = await this.userProfileRepo.findById(id);
+  async updateProfile(userId: string, data: UpdateUserProfileDTO) {
+    const profile = await this.userProfileRepo.findByUserId(userId);
 
     if (!profile) {
       logger.warn("Profile Not Found", { userId });
@@ -60,7 +61,7 @@ class UserService {
     }
 
     if (profile.userId !== userId) {
-      logger.warn("Profile Not to update", { userId });
+      logger.warn("Profile Not allowed to update", { userId });
 
       throw new ForbiddenError({
         message: "You are not allowed to update this profile",
@@ -68,7 +69,8 @@ class UserService {
       });
     }
 
-    const updated = await this.userProfileRepo.update(id, data);
+    const updateData = UserMapper.toUpateProfileInput(data);
+    const updated = await this.userProfileRepo.update(profile.id, updateData);
 
     return UserMapper.toUserProfileDTO(updated);
   }

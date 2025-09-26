@@ -49,7 +49,17 @@ JSON string Schema:
     "phone": "+63 912 345 6789",
     "linkedin": "linkedin.com/in/janedoe"
   },
-  "skills": ["Python", "React", "SQL", "Project Management"],
+  "skills": [
+  {
+    "name":"Python",
+  },
+  {
+    "name":"React",
+  },
+  {
+  "name":"sql",
+  }
+  ],
   "experience": [
     {
       "company": "ABC Corp",

@@ -60,17 +60,17 @@ class UserProfileRepostory extends BaseRepository {
     }
   }
 
-  async update(id: string, data: UpdateUserProfileDTO) {
-    try {
-      // return await this.prisma.userProfile.update({
-      //   where: {
-      //     id,
-      //   },
-      //   data: data,
-      // });
-    } catch (error) {
-      this.handleError(error, "Failed to update user profile");
-    }
+  async update(id: string, data: Prisma.UserProfileUpdateInput) {
+    return this.prisma.userProfile.update({
+      where: { id },
+      data,
+      include: {
+        contact: true,
+        skills: true,
+        experience: true,
+        education: true,
+      },
+    });
   }
 }
 
