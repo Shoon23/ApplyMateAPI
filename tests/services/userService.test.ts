@@ -5,6 +5,9 @@ import DatabaseError from "../../src/errors/DatabaseError";
 import LLMExtractionError from "../../src/errors/LLMExtractionError";
 import DuplicateError from "../../src/errors/DuplicateError";
 import NotFoundError from "../../src/errors/NotFoundError";
+import ForbiddenError from "../../src/errors/ForbiddenError";
+
+import { UpdateUserProfileDTO } from "../../src/dto/user.dto";
 
 describe("UserService", () => {
   let userService: UserService;
@@ -54,12 +57,15 @@ describe("UserService", () => {
     mockLLMService = {
       extractUserProfile: jest.fn(),
       getProfile: jest.fn(),
+      updateProfile: jest.fn(),
     } as any;
 
     mockUserRepository = {
       createProfile: jest.fn(),
       findByIdAndUserId: jest.fn(),
       findByUserId: jest.fn(),
+      findById: jest.fn(),
+      update: jest.fn(),
     } as any;
 
     userService = new UserService(mockLLMService, mockUserRepository);
@@ -186,6 +192,172 @@ describe("UserService", () => {
       await expect(userService.getProfile(mockUserId)).rejects.toBeInstanceOf(
         DatabaseError
       );
+    });
+  });
+
+  describe("Update User Profile", () => {
+    it("should update contact successfully", async () => {
+      const updateData: UpdateUserProfileDTO = {
+        contact: { name: "New Name" },
+      };
+
+      const updatedProfile = {
+        ...mockUserProfile,
+        contact: { ...mockUserProfile.contact, name: "New Name" },
+      };
+
+      mockUserRepository.findById.mockResolvedValue(mockUserProfile);
+      mockUserRepository.update.mockResolvedValue(updatedProfile);
+
+      const result = await userService.updateProfile(
+        mockUserProfile.id,
+        mockUserId,
+        updateData
+      );
+
+      expect(mockUserRepository.findById).toHaveBeenCalledWith(
+        mockUserProfile.id
+      );
+      expect(mockUserRepository.update).toHaveBeenCalledWith(
+        mockUserProfile.id,
+        updateData
+      );
+      expect(result).toEqual(updatedProfile);
+    });
+
+    it("should update skills successfully", async () => {
+      const updateData: UpdateUserProfileDTO = {
+        skills: ["TypeScript", "Node.js"],
+      };
+
+      const updatedProfile = {
+        ...mockUserProfile,
+        skills: ["TypeScript", "Node.js"],
+      };
+
+      mockUserRepository.findById.mockResolvedValue(mockUserProfile);
+      mockUserRepository.update.mockResolvedValue(updatedProfile);
+
+      const result = await userService.updateProfile(
+        mockUserProfile.id,
+        mockUserId,
+        updateData
+      );
+
+      expect(mockUserRepository.findById).toHaveBeenCalledWith(
+        mockUserProfile.id
+      );
+      expect(mockUserRepository.update).toHaveBeenCalledWith(
+        mockUserProfile.id,
+        updateData
+      );
+      expect(result).toEqual(updatedProfile);
+    });
+
+    it("should update experience successfully", async () => {
+      const updateData = {
+        experience: [
+          {
+            company: "OpenAI",
+            role: "Engineer",
+            startDate: "2022-01-01",
+            endDate: "2023-01-01",
+            achievements: ["Built stuff"],
+          },
+        ],
+      };
+      const updatedProfile = {
+        ...mockUserProfile,
+        experience: [
+          {
+            company: "OpenAI",
+            role: "Engineer",
+            startDate: "2022-01-01",
+            endDate: "2023-01-01",
+            achievements: ["Built stuff"],
+          },
+        ],
+      };
+
+      mockUserRepository.findById.mockResolvedValue(mockUserProfile);
+      mockUserRepository.update.mockResolvedValue(updatedProfile);
+
+      const result = await userService.updateProfile(
+        mockUserProfile.id,
+        mockUserId,
+        updateData
+      );
+
+      expect(mockUserRepository.findById).toHaveBeenCalledWith(
+        mockUserProfile.id
+      );
+      expect(mockUserRepository.update).toHaveBeenCalledWith(
+        mockUserProfile.id,
+        updateData
+      );
+      expect(result).toEqual(updatedProfile);
+    });
+
+    it("should update education successfully", async () => {
+      const updateData = {
+        education: [
+          {
+            degree: "BS Computer Science",
+            institution: "XYZ University",
+            year: "2020",
+          },
+        ],
+      };
+
+      const updatedProfile = {
+        ...mockUserProfile,
+        education: updateData.education,
+      };
+
+      mockUserRepository.findById.mockResolvedValue(mockUserProfile);
+      mockUserRepository.update.mockResolvedValue(updatedProfile);
+
+      const result = await userService.updateProfile(
+        mockUserProfile.id,
+        mockUserId,
+        updateData
+      );
+
+      expect(mockUserRepository.findById).toHaveBeenCalledWith(
+        mockUserProfile.id
+      );
+      expect(mockUserRepository.update).toHaveBeenCalledWith(
+        mockUserProfile.id,
+        updateData
+      );
+      expect(result).toEqual(updatedProfile);
+    });
+
+    it("should throw NotFoundError if profile does not exist", async () => {
+      mockUserRepository.findById.mockResolvedValue(null);
+
+      await expect(
+        userService.updateProfile("profile-123", "user-123", {
+          contact: { name: "New" },
+        })
+      ).rejects.toThrow(NotFoundError);
+    });
+
+    it("should throw ForbiddenError if user does not own profile", async () => {
+      const fakeProfileId = "profile-123";
+      const existingProfile = {
+        ...mockUserProfile,
+        id: fakeProfileId,
+        userId: "another-user",
+      };
+
+      mockUserRepository.findById.mockResolvedValue(existingProfile);
+
+      await expect(
+        userService.updateProfile(fakeProfileId, "user-123", {
+          contact: { name: "New" },
+        })
+      ).rejects.toThrow(ForbiddenError);
     });
   });
 });
