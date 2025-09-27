@@ -54,6 +54,41 @@ class UserProfileRepostory extends BaseRepository {
         where: {
           userId,
         },
+        include: {
+          contact: {
+            select: {
+              email: true,
+              id: true,
+              linkedin: true,
+              name: true,
+              phone: true,
+            },
+          },
+          skills: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          experience: {
+            select: {
+              achievements: true,
+              company: true,
+              endDate: true,
+              id: true,
+              role: true,
+              startDate: true,
+            },
+          },
+          education: {
+            select: {
+              degree: true,
+              id: true,
+              institution: true,
+              year: true,
+            },
+          },
+        },
       });
     } catch (error) {
       this.handleError(error, "Failed to find user profile");
@@ -65,10 +100,39 @@ class UserProfileRepostory extends BaseRepository {
       where: { id },
       data,
       include: {
-        contact: true,
-        skills: true,
-        experience: true,
-        education: true,
+        contact: {
+          select: {
+            email: true,
+            id: true,
+            linkedin: true,
+            name: true,
+            phone: true,
+          },
+        },
+        skills: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        experience: {
+          select: {
+            achievements: true,
+            company: true,
+            endDate: true,
+            id: true,
+            role: true,
+            startDate: true,
+          },
+        },
+        education: {
+          select: {
+            degree: true,
+            id: true,
+            institution: true,
+            year: true,
+          },
+        },
       },
     });
   }

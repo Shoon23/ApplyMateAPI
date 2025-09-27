@@ -27,7 +27,7 @@ class UserMapper {
       createdAt: data?.createdAt ?? null,
       updatedAt: data?.updatedAt ?? null,
 
-      contact: this.mapContact(data?.contact),
+      contact: data?.contact,
       skills: data.skills,
       experience: data.experience,
       education: data.education,

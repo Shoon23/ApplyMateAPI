@@ -44,7 +44,6 @@ class UserService {
         property: "id",
       });
     }
-
     return UserMapper.toUserProfileDTO(profileData);
   }
 
@@ -56,15 +55,6 @@ class UserService {
 
       throw new NotFoundError({
         message: "User Profile Not Found",
-        property: "id",
-      });
-    }
-
-    if (profile.userId !== userId) {
-      logger.warn("Profile Not allowed to update", { userId });
-
-      throw new ForbiddenError({
-        message: "You are not allowed to update this profile",
         property: "id",
       });
     }

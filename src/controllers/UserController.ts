@@ -60,7 +60,6 @@ class UserController extends BaseController {
       id: result.id,
       userId: result.userId,
     });
-
     res.status(200).json(result);
   };
 
