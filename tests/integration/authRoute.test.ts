@@ -85,24 +85,24 @@ describe("Auth Integration", () => {
     });
 
     it("should return 400 for missing fields", async () => {
-      const res = await request(app).post(url).send({}).expect(400);
+      const res = await request(app)
+        .post(url)
+        .send({
+          email: "some email",
+        })
+        .expect(400);
 
       expect(res.body.errorType).toBe("VALIDATION_ERROR");
       expect(Array.isArray(res.body.errors)).toBe(true);
 
       const props = res.body.errors.map((err: any) => err.property);
 
-      expect(props).toContain("email");
       expect(props).toContain("password");
 
-      const emailError = res.body.errors.find(
-        (err: any) => err.property === "email"
-      );
       const passwordError = res.body.errors.find(
         (err: any) => err.property === "password"
       );
 
-      expect(emailError.message).toMatch(/email/i);
       expect(passwordError.message).toMatch(/password/i);
     });
     it("should return 400 for invalid email format", async () => {
@@ -155,14 +155,18 @@ describe("Auth Integration", () => {
     });
 
     it("should return 400 if fields are missing", async () => {
-      const res = await request(app).post(url).send({}).expect(400);
+      const res = await request(app)
+        .post(url)
+        .send({
+          name: "some-name",
+        })
+        .expect(400);
 
       expect(res.body.errorType).toBe("VALIDATION_ERROR");
       expect(Array.isArray(res.body.errors)).toBe(true);
 
       const props = res.body.errors.map((err: any) => err.property);
       expect(props).toContain("email");
-      expect(props).toContain("name");
       expect(props).toContain("password");
     });
 

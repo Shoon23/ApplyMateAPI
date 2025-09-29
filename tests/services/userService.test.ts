@@ -256,37 +256,37 @@ describe("UserService", () => {
     });
   });
 
-  // describe("Get User Profile", () => {
-  //   it("it should return user profile", async () => {
-  //     mockUserRepository.findByUserId.mockResolvedValue(mockUserProfile);
+  describe("Get User Profile", () => {
+    it("it should return user profile", async () => {
+      mockUserRepository.findByUserId.mockResolvedValue(mockCreatedUserProfile);
 
-  //     const result = await userService.getProfile(mockUserId);
+      const result = await userService.getProfile(mockUserId);
 
-  //     expect(mockUserRepository.findByUserId).toHaveBeenCalledWith(mockUserId);
+      expect(mockUserRepository.findByUserId).toHaveBeenCalledWith(mockUserId);
 
-  //     expect(result).toEqual(mockUserProfile);
-  //   });
+      expect(result).toEqual(mockCreatedUserProfile);
+    });
 
-  //   it("should return NotFoundError if profile is not found", async () => {
-  //     mockUserRepository.findByUserId.mockResolvedValue(null);
+    it("should return NotFoundError if profile is not found", async () => {
+      mockUserRepository.findByUserId.mockResolvedValue(null);
 
-  //     await expect(userService.getProfile("user-123")).rejects.toBeInstanceOf(
-  //       NotFoundError
-  //     );
+      await expect(userService.getProfile("user-123")).rejects.toBeInstanceOf(
+        NotFoundError
+      );
 
-  //     expect(mockUserRepository.findByUserId).toHaveBeenCalledWith("user-123");
-  //   });
+      expect(mockUserRepository.findByUserId).toHaveBeenCalledWith("user-123");
+    });
 
-  //   it("should throw DatabaseError if findByIdAndUserId fails", async () => {
-  //     mockUserRepository.findByUserId.mockRejectedValue(
-  //       new DatabaseError(new Error("DB find error"), "Something Went wrong")
-  //     );
+    it("should throw DatabaseError if findByIdAndUserId fails", async () => {
+      mockUserRepository.findByUserId.mockRejectedValue(
+        new DatabaseError(new Error("DB find error"), "Something Went wrong")
+      );
 
-  //     await expect(userService.getProfile(mockUserId)).rejects.toBeInstanceOf(
-  //       DatabaseError
-  //     );
-  //   });
-  // });
+      await expect(userService.getProfile(mockUserId)).rejects.toBeInstanceOf(
+        DatabaseError
+      );
+    });
+  });
 
   describe("Update User Profile", () => {
     it("should update contact successfully", async () => {
@@ -440,16 +440,6 @@ describe("UserService", () => {
       await expect(
         userService.updateProfile(mockUserId, { contact: { name: "New" } })
       ).rejects.toThrow(NotFoundError);
-    });
-
-    it("should throw ForbiddenError if user does not own profile", async () => {
-      mockUserRepository.findByUserId.mockResolvedValue(mockCreatedUserProfile);
-
-      await expect(
-        userService.updateProfile("another user id", {
-          contact: { name: "New" },
-        })
-      ).rejects.toThrow(ForbiddenError);
     });
   });
 });

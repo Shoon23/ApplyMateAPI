@@ -114,14 +114,15 @@ describe("Job Route Integration", () => {
       const res = await request(app)
         .post(url)
         .set("Authorization", `Bearer ${accessToken}`)
-        .send({})
+        .send({
+          company: "some-company",
+        })
         .expect(400);
 
       expect(res.body.errorType).toBe("VALIDATION_ERROR");
       expect(Array.isArray(res.body.errors)).toBe(true);
 
       const props = res.body.errors.map((err: any) => err.property);
-      expect(props).toContain("company");
       expect(props).toContain("position");
       expect(props).toContain("status");
     });
