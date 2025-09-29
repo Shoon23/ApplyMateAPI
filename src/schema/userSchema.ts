@@ -94,6 +94,26 @@ function hybridSchema(itemSchema: Joi.ObjectSchema) {
         "array.base": "Remove must be an array of IDs",
         "string.base": "Each ID in remove must be a string",
       }),
+      update: Joi.array()
+        .items(
+          itemSchema
+            .keys({
+              id: Joi.string().required().messages({
+                "any.required": "Update requires an ID",
+                "string.base": "ID must be a string",
+              }),
+            })
+            .custom((value, helpers) => {
+              const { id, ...rest } = value;
+              if (Object.keys(rest).length === 0) {
+                return helpers.error("object.minFields");
+              }
+              return value;
+            })
+        )
+        .messages({
+          "array.base": "Update must be an array of valid items",
+        }),
     }).messages({
       "object.base": "Must be an object with optional add/remove arrays",
     })

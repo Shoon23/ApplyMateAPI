@@ -35,7 +35,7 @@ export interface EducationDTO {
   year?: string;
 }
 
-export type HybridArray<T> = T[] | { add?: T[]; remove?: string[] };
+export type HybridArray<T> = { add?: T[]; remove?: string[]; update?: T[] };
 export interface UpdateUserProfileDTO {
   contact?: ContactDTO;
   skills?: HybridArray<SkillDTO>;

@@ -59,7 +59,10 @@ class UserService {
       });
     }
 
+    // console.log(util.inspect(data, { depth: null, colors: true }));
     const updateData = UserMapper.toUpateProfileInput(data);
+
+    // console.log(util.inspect(updateData, { depth: null, colors: true }));
     const updated = await this.userProfileRepo.update(profile.id, updateData);
 
     return UserMapper.toUserProfileDTO(updated);
