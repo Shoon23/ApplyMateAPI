@@ -14,7 +14,7 @@ describe("User Route Integration", () => {
     password: "secret123",
   };
   let accessToken: string;
-
+  let sampleProfileData: any;
   beforeAll(async () => {
     // Delete any existing test data manually in correct order
     const existingUser = await prisma.user.findUnique({
@@ -127,7 +127,7 @@ describe("User Route Integration", () => {
         .get("/api/v1/profile")
         .set("Authorization", `Bearer ${accessToken}`)
         .expect(200);
-
+      sampleProfileData = res.body;
       expect(res.body).toHaveProperty("id");
       expect(res.body).toHaveProperty("userId");
       expect(res.body).toBeDefined();
@@ -146,6 +146,172 @@ describe("User Route Integration", () => {
 
       expect(res.body).toHaveProperty("errorType");
       expect(res.body.errorType).toMatch(/AUTH_ERROR/i);
+    });
+  });
+
+  describe("PATCH /api/v1/profile", () => {
+    it("should return 400 if body is empty", async () => {
+      const res = await request(app)
+        .patch("/api/v1/profile")
+        .set("Authorization", `Bearer ${accessToken}`)
+        .send({})
+        .expect(400);
+
+      expect(res.body.errorType).toBe("VALIDATION_ERROR");
+    });
+
+    it("should return 401 if no access token is provided", async () => {
+      const res = await request(app).get("/api/v1/profile").expect(401);
+
+      expect(res.body.errorType).toBe("AUTH_ERROR");
+    });
+
+    it("should update contact successfully", async () => {
+      const res = await request(app)
+        .patch("/api/v1/profile")
+        .set("Authorization", `Bearer ${accessToken}`)
+        .send({
+          contact: {
+            name: "John Doe",
+            email: "john@example.com",
+          },
+        });
+
+      expect(res.status).toBe(200);
+      expect(res.body.contact.name).toBe("John Doe");
+    });
+
+    it("should fail when contact email is invalid", async () => {
+      const res = await request(app)
+        .patch("/api/v1/profile")
+        .set("Authorization", `Bearer ${accessToken}`)
+        .send({
+          contact: {
+            email: "not-an-email",
+          },
+        });
+
+      expect(res.status).toBe(400);
+      expect(res.body.errors[0].message).toMatch(
+        /Contact email must be a valid email address/
+      );
+    });
+
+    it("should add a new skill", async () => {
+      const res = await request(app)
+        .patch("/api/v1/profile")
+        .set("Authorization", `Bearer ${accessToken}`)
+        .send({
+          skills: { add: [{ name: "Node.js" }] },
+        });
+
+      expect(res.status).toBe(200);
+      expect(res.body.skills).toEqual(
+        expect.arrayContaining([expect.objectContaining({ name: "Node.js" })])
+      );
+    });
+
+    it("should update an existing skill", async () => {
+      const res = await request(app)
+        .patch("/api/v1/profile")
+        .set("Authorization", `Bearer ${accessToken}`)
+        .send({
+          skills: {
+            update: [{ id: sampleProfileData.skills[0].id, name: "c#" }],
+          },
+        });
+      expect(res.status).toBe(200);
+      expect(res.body.skills).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            id: sampleProfileData.skills[0].id,
+            name: "c#",
+          }),
+        ])
+      );
+    });
+
+    it("should fail when updating a skill with only id", async () => {
+      const res = await request(app)
+        .patch("/api/v1/profile")
+        .set("Authorization", `Bearer ${accessToken}`)
+        .send({
+          skills: { update: [{ id: "skill1" }] },
+        });
+
+      expect(res.status).toBe(400);
+      expect(res.body.errors[0].message).toMatch(/Skill name is required/);
+    });
+
+    it("should add experience successfully", async () => {
+      const res = await request(app)
+        .patch("/api/v1/profile")
+        .set("Authorization", `Bearer ${accessToken}`)
+        .send({
+          experience: {
+            add: [{ company: "Tech Corp", role: "Developer" }],
+          },
+        });
+
+      expect(res.status).toBe(200);
+      expect(res.body.experience).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ company: "Tech Corp", role: "Developer" }),
+        ])
+      );
+    });
+
+    it("should fail when experience startDate is invalid", async () => {
+      const res = await request(app)
+        .patch("/api/v1/profile")
+        .set("Authorization", `Bearer ${accessToken}`)
+        .send({
+          experience: {
+            add: [{ company: "Bad Corp", startDate: "not-a-date" }],
+          },
+        });
+
+      expect(res.status).toBe(400);
+      expect(res.body.errors[0].message).toMatch(
+        /Experience startDate must be a valid date/
+      );
+    });
+
+    it("should update education successfully", async () => {
+      const res = await request(app)
+        .patch("/api/v1/profile")
+        .set("Authorization", `Bearer ${accessToken}`)
+        .send({
+          education: {
+            update: [{ id: sampleProfileData.education[0].id, degree: "MSCS" }],
+          },
+        });
+
+      expect(res.status).toBe(200);
+      expect(res.body.education).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            id: sampleProfileData.education[0].id,
+            degree: "MSCS",
+          }),
+        ])
+      );
+    });
+
+    it("should fail when education year is not a string", async () => {
+      const res = await request(app)
+        .patch("/api/v1/profile")
+        .set("Authorization", `Bearer ${accessToken}`)
+        .send({
+          education: {
+            add: [{ institution: "ABC University", year: 2024 }],
+          },
+        });
+
+      expect(res.status).toBe(400);
+      expect(res.body.errors[0].message).toMatch(
+        /Education year must be a string/
+      );
     });
   });
 });
