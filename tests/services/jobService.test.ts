@@ -1,12 +1,22 @@
 import { create } from "domain";
-import { Prisma, Status } from "../../generated/prisma";
+import { JobApplication, Prisma, Status } from "../../generated/prisma";
 import DatabaseError from "../../src/errors/DatabaseError";
 import JobRepository from "../../src/repository/JobRepository";
 import JobService from "../../src/services/JobService";
 import NotFoundError from "../../src/errors/NotFoundError";
+import LLMService from "../../src/services/LLMService";
+import UserProfileRepostory from "../../src/repository/UserProfileRepository";
+import JobMatchRepository from "../../src/repository/JobMatchRepository";
+import { JobDTO } from "../../src/dto/job.dto";
 describe("Job Service", () => {
-  let mockRepo: jest.Mocked<JobRepository>;
+  let jobMockRepo: jest.Mocked<JobRepository>;
   let jobService: JobService;
+
+  let mockLLMService: jest.Mocked<LLMService>;
+  let userProfileMockrepo: jest.Mocked<UserProfileRepostory>;
+
+  let jobMatchMockRepo: jest.Mocked<JobMatchRepository>;
+
   const mockJob = {
     id: "job-123",
     company: "OpenAI",
@@ -20,25 +30,108 @@ describe("Job Service", () => {
     createdAt: new Date(),
     updatedAt: new Date(),
     userId: "user-123",
+    description: "some description",
+    notes: null,
+    salary: 0,
+    jobMatchScore: [
+      {
+        id: "score-123",
+        jobId: "job-123",
+        userProfileId: "profile-123",
+        fitScore: 75,
+        explanation: ["some explanation"],
+      },
+    ],
+  };
+
+  const mockUserProfile = {
+    contact: {
+      id: "some-id",
+      profileId: "mock-id",
+      name: "Jane Doe",
+      email: "jane@example.com",
+      phone: "+63 912 345 6789",
+      linkedin: "linkedin.com/in/janedoe",
+    },
+    skills: [
+      {
+        name: "Python",
+        id: "some-id",
+        profileId: "mock-id",
+      },
+      {
+        name: "React",
+        id: "some-id",
+        profileId: "mock-id",
+      },
+      {
+        name: "SQL",
+        id: "some-id",
+        profileId: "mock-id",
+      },
+    ],
+    experience: [
+      {
+        id: "some-id",
+        profileId: "mock-id",
+        company: "ABC Corp",
+        role: "Software Engineer",
+        startDate: "2021-01",
+        endDate: "2023-06",
+        achievements: [
+          "Developed REST APIs with Express.js",
+          "Improved query performance by 30%",
+        ],
+      },
+    ],
+    education: [
+      {
+        id: "some-id",
+        profileId: "mock-id",
+        degree: "BSc Computer Science",
+        institution: "XYZ University",
+        year: "2020",
+      },
+    ],
+    userId: mockJob.userId,
+    resumeText: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    id: "231",
   };
   beforeEach(() => {
     jest.clearAllMocks();
 
     // Create a mocked instance of UserRepository
-    mockRepo = {
+    jobMockRepo = {
       findAll: jest.fn(),
       findById: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
       delete: jest.fn(),
     } as unknown as jest.Mocked<JobRepository>;
+    userProfileMockrepo = {
+      findByUserId: jest.fn(),
+    } as unknown as jest.Mocked<UserProfileRepostory>;
+    jobMatchMockRepo = {
+      create: jest.fn(),
+    } as unknown as jest.Mocked<JobMatchRepository>;
 
-    jobService = new JobService(mockRepo);
+    mockLLMService = {
+      getJobMatchScore: jest.fn(),
+    } as unknown as jest.Mocked<LLMService>;
+
+    jobService = new JobService(
+      jobMockRepo,
+      userProfileMockrepo,
+      mockLLMService,
+      jobMatchMockRepo
+    );
   });
   describe("Create Job Application", () => {
     it("should create a job successfully", async () => {
-      mockRepo.create.mockResolvedValue(mockJob);
-
+      jobMockRepo.create.mockResolvedValue(mockJob);
+      userProfileMockrepo.findByUserId.mockResolvedValue(mockUserProfile);
       const result = await jobService.createJobApplication({
         company: "OpenAI",
         position: "Backend Engineer",
@@ -51,8 +144,8 @@ describe("Job Service", () => {
         userId: "user-123",
       });
 
-      expect(mockRepo.create).toHaveBeenCalledTimes(1);
-      expect(result).toEqual(mockJob);
+      expect(jobMockRepo.create).toHaveBeenCalledTimes(1);
+      expect(result.id).toEqual(mockJob.id);
     });
 
     it("should throw a DatabaseError if the repository fails", async () => {
@@ -60,7 +153,7 @@ describe("Job Service", () => {
         "Something went wrong in the database",
         { code: "P9999", clientVersion: "unknown" }
       );
-      mockRepo.create.mockRejectedValue(
+      jobMockRepo.create.mockRejectedValue(
         new DatabaseError(prismaError, "Something Went Wrong")
       );
 
@@ -76,20 +169,20 @@ describe("Job Service", () => {
   });
   describe("Get Singe Job Application", () => {
     it("should return a Job Application", async () => {
-      mockRepo.findById.mockResolvedValue(mockJob);
+      jobMockRepo.findById.mockResolvedValue(mockJob);
 
       const result = await jobService.getJobById(mockJob.id, mockJob.userId);
-      expect(mockRepo.findById).toHaveBeenCalledTimes(1);
-      expect(result).toEqual(mockJob);
+      expect(jobMockRepo.findById).toHaveBeenCalledTimes(1);
+      expect(result.id).toEqual(mockJob.id);
     });
     it("should throw NotFoundError if no job exists for the user", async () => {
-      mockRepo.findById.mockResolvedValue(null);
+      jobMockRepo.findById.mockResolvedValue(null);
 
       await expect(
         jobService.getJobById("non-existent-id", "user-123")
       ).rejects.toBeInstanceOf(NotFoundError);
 
-      expect(mockRepo.findById).toHaveBeenCalledWith(
+      expect(jobMockRepo.findById).toHaveBeenCalledWith(
         "non-existent-id",
         "user-123"
       );
@@ -99,7 +192,7 @@ describe("Job Service", () => {
         "Something went wrong in the database",
         { code: "P9999", clientVersion: "unknown" }
       );
-      mockRepo.create.mockRejectedValue(
+      jobMockRepo.create.mockRejectedValue(
         new DatabaseError(prismaError, "Something Went Wrong")
       );
 
@@ -113,7 +206,7 @@ describe("Job Service", () => {
       ).rejects.toBeInstanceOf(DatabaseError);
     });
     it("should normalize empty optional fields to null", async () => {
-      mockRepo.create.mockResolvedValue(mockJob);
+      jobMockRepo.create.mockResolvedValue(mockJob);
 
       const res = await jobService.createJobApplication({
         company: "OpenAI",
@@ -124,13 +217,13 @@ describe("Job Service", () => {
         contactEmail: "",
         source: "",
       } as any);
-      const callArgs = mockRepo.create.mock.calls[0][0];
+      const callArgs = jobMockRepo.create.mock.calls[0][0];
       expect(callArgs.contactName).toBeNull();
       expect(callArgs.contactEmail).toBeNull();
       expect(callArgs.source).toBeNull();
     });
     it("should include userId when creating job", async () => {
-      mockRepo.create.mockResolvedValue(mockJob);
+      jobMockRepo.create.mockResolvedValue(mockJob);
 
       await jobService.createJobApplication({
         company: "OpenAI",
@@ -139,7 +232,7 @@ describe("Job Service", () => {
         userId: "user-123",
       } as any);
 
-      const callArgs = mockRepo.create.mock.calls[0][0];
+      const callArgs = jobMockRepo.create.mock.calls[0][0];
       expect(callArgs.userId).toBe("user-123");
     });
   });
@@ -151,7 +244,7 @@ describe("Job Service", () => {
     ];
 
     it("should return jobs with pagination metadata", async () => {
-      mockRepo.findAll.mockResolvedValue({
+      jobMockRepo.findAll.mockResolvedValue({
         data: mockJobs,
         meta: { total: 3, page: 1, limit: 10, totalPages: 1 },
       });
@@ -162,7 +255,7 @@ describe("Job Service", () => {
         pagination: { page: 1, limit: 10, skip: 0 },
       });
 
-      expect(mockRepo.findAll).toHaveBeenCalledTimes(1);
+      expect(jobMockRepo.findAll).toHaveBeenCalledTimes(1);
       expect(result.data.length).toBe(3);
       expect(result.meta.total).toBe(3);
       expect(result.meta.page).toBe(1);
@@ -170,7 +263,7 @@ describe("Job Service", () => {
     });
 
     it("should handle search filter", async () => {
-      mockRepo.findAll.mockResolvedValue({
+      jobMockRepo.findAll.mockResolvedValue({
         data: [mockJobs[0]],
         meta: { total: 1, page: 1, limit: 10, totalPages: 1 },
       });
@@ -181,7 +274,7 @@ describe("Job Service", () => {
         pagination: { page: 1, limit: 10, skip: 0 },
       });
 
-      expect(mockRepo.findAll).toHaveBeenCalledWith({
+      expect(jobMockRepo.findAll).toHaveBeenCalledWith({
         userId: "user-123",
         filters: { search: "OpenAI", sortBy: "createdAt", order: "desc" },
         pagination: { page: 1, limit: 10, skip: 0 },
@@ -190,7 +283,7 @@ describe("Job Service", () => {
     });
 
     it("should handle status sorting", async () => {
-      mockRepo.findAll.mockResolvedValue({
+      jobMockRepo.findAll.mockResolvedValue({
         data: [mockJobs[1], mockJobs[0], mockJobs[2]],
         meta: { total: 3, page: 1, limit: 10, totalPages: 1 },
       });
@@ -201,7 +294,7 @@ describe("Job Service", () => {
         pagination: { page: 1, limit: 10, skip: 0 },
       });
 
-      expect(mockRepo.findAll).toHaveBeenCalledWith({
+      expect(jobMockRepo.findAll).toHaveBeenCalledWith({
         userId: "user-123",
         filters: { search: "", sortBy: "status", order: "asc" },
         pagination: { page: 1, limit: 10, skip: 0 },
@@ -210,7 +303,7 @@ describe("Job Service", () => {
     });
 
     it("should throw DatabaseError if repository fails", async () => {
-      mockRepo.findAll.mockRejectedValue(
+      jobMockRepo.findAll.mockRejectedValue(
         new DatabaseError(new Error("DB failed"), "Error fetching jobs")
       );
 
@@ -226,7 +319,7 @@ describe("Job Service", () => {
 
   describe("Update Job Application", () => {
     it("Should return a updated company name", async () => {
-      mockRepo.update.mockResolvedValue({
+      jobMockRepo.update.mockResolvedValue({
         ...mockJob,
         company: "google",
       });
@@ -241,7 +334,7 @@ describe("Job Service", () => {
     });
     it("Should update and return the full job object", async () => {
       const updatedJobData = { ...mockJob, company: "Google LLC" };
-      mockRepo.update.mockResolvedValue(updatedJobData);
+      jobMockRepo.update.mockResolvedValue(updatedJobData);
 
       const updatedJob = await jobService.updateJob(updatedJobData);
 
@@ -252,7 +345,7 @@ describe("Job Service", () => {
       });
     });
     it("Should update company", async () => {
-      mockRepo.update.mockResolvedValue({ ...mockJob, company: "Google" });
+      jobMockRepo.update.mockResolvedValue({ ...mockJob, company: "Google" });
 
       const updatedJob = await jobService.updateJob({
         company: "Google",
@@ -264,7 +357,7 @@ describe("Job Service", () => {
     });
 
     it("Should update position", async () => {
-      mockRepo.update.mockResolvedValue({
+      jobMockRepo.update.mockResolvedValue({
         ...mockJob,
         position: "Frontend Engineer",
       });
@@ -279,7 +372,7 @@ describe("Job Service", () => {
     });
 
     it("Should update source", async () => {
-      mockRepo.update.mockResolvedValue({ ...mockJob, source: "Indeed" });
+      jobMockRepo.update.mockResolvedValue({ ...mockJob, source: "Indeed" });
 
       const updatedJob = await jobService.updateJob({
         id: mockJob.id,
@@ -291,7 +384,7 @@ describe("Job Service", () => {
     });
 
     it("Should update status", async () => {
-      mockRepo.update.mockResolvedValue({
+      jobMockRepo.update.mockResolvedValue({
         ...mockJob,
         status: Status.INTERVIEW,
       });
@@ -307,7 +400,10 @@ describe("Job Service", () => {
 
     it("Should update appliedDate", async () => {
       const newDate = new Date("2025-01-01");
-      mockRepo.update.mockResolvedValue({ ...mockJob, appliedDate: newDate });
+      jobMockRepo.update.mockResolvedValue({
+        ...mockJob,
+        appliedDate: newDate,
+      });
 
       const updatedJob = await jobService.updateJob({
         id: mockJob.id,
@@ -320,7 +416,10 @@ describe("Job Service", () => {
 
     it("Should update deadline", async () => {
       const newDeadline = new Date("2025-12-31");
-      mockRepo.update.mockResolvedValue({ ...mockJob, deadline: newDeadline });
+      jobMockRepo.update.mockResolvedValue({
+        ...mockJob,
+        deadline: newDeadline,
+      });
 
       const updatedJob = await jobService.updateJob({
         id: mockJob.id,
@@ -332,7 +431,7 @@ describe("Job Service", () => {
     });
 
     it("Should update contactName", async () => {
-      mockRepo.update.mockResolvedValue({ ...mockJob, contactName: "Bob" });
+      jobMockRepo.update.mockResolvedValue({ ...mockJob, contactName: "Bob" });
 
       const updatedJob = await jobService.updateJob({
         id: mockJob.id,
@@ -344,7 +443,7 @@ describe("Job Service", () => {
     });
 
     it("Should update contactEmail", async () => {
-      mockRepo.update.mockResolvedValue({
+      jobMockRepo.update.mockResolvedValue({
         ...mockJob,
         contactEmail: "bob@example.com",
       });
@@ -359,7 +458,7 @@ describe("Job Service", () => {
     });
 
     it("Should update userId", async () => {
-      mockRepo.update.mockResolvedValue({ ...mockJob, userId: "user-456" });
+      jobMockRepo.update.mockResolvedValue({ ...mockJob, userId: "user-456" });
 
       const updatedJob = await jobService.updateJob({
         id: "job-123",
@@ -369,7 +468,7 @@ describe("Job Service", () => {
       expect(updatedJob.userId).toBe("user-456");
     });
     it("should throw DatabaseError if repository fails", async () => {
-      mockRepo.findAll.mockRejectedValue(
+      jobMockRepo.findAll.mockRejectedValue(
         new DatabaseError(new Error("DB failed"), "Error fetching jobs")
       );
 
@@ -383,7 +482,7 @@ describe("Job Service", () => {
     });
 
     it("Should return NotFoundError instance if the job is not found", async () => {
-      mockRepo.update.mockRejectedValue(
+      jobMockRepo.update.mockRejectedValue(
         new NotFoundError({
           message: "Job Not Found",
         })
@@ -402,7 +501,7 @@ describe("Job Service", () => {
 
       // Simulate updating only the company field
       const updatedJobData = { ...originalJob, company: "Amazon" };
-      mockRepo.update.mockResolvedValue(updatedJobData);
+      jobMockRepo.update.mockResolvedValue(updatedJobData);
 
       const updatedJob = await jobService.updateJob({
         id: mockJob.id,
@@ -425,17 +524,20 @@ describe("Job Service", () => {
   });
   describe("Delete Job Application", () => {
     it("should delete a job application successfully", async () => {
-      mockRepo.delete.mockResolvedValue(mockJob);
+      jobMockRepo.delete.mockResolvedValue(mockJob);
 
       const result = await jobService.deleteJob(mockJob.id, mockJob.userId);
 
-      expect(mockRepo.delete).toHaveBeenCalledWith(mockJob.id, mockJob.userId);
+      expect(jobMockRepo.delete).toHaveBeenCalledWith(
+        mockJob.id,
+        mockJob.userId
+      );
       expect(result).toEqual(mockJob);
     });
 
     it("should throw NotFoundError if job does not exist", async () => {
       // Arrange
-      mockRepo.delete.mockRejectedValue(
+      jobMockRepo.delete.mockRejectedValue(
         new NotFoundError({ message: "Job Not Found" })
       );
 
@@ -447,7 +549,7 @@ describe("Job Service", () => {
 
     it("should throw DatabaseError if repository fails", async () => {
       // Arrange
-      mockRepo.delete.mockRejectedValue(
+      jobMockRepo.delete.mockRejectedValue(
         new DatabaseError(new Error("DB failed"), "Error deleting job")
       );
 
@@ -455,6 +557,68 @@ describe("Job Service", () => {
       await expect(
         jobService.deleteJob(mockJob.id, mockJob.userId)
       ).rejects.toThrow(DatabaseError);
+    });
+  });
+
+  describe("Create Job Fit Score", () => {
+    it("should create job fit score successfully", async () => {
+      // Arrange: mock LLM response
+      mockLLMService.getJobMatchScore.mockResolvedValue({
+        fitScore: 75,
+        explanation: ["some explanation"],
+      });
+
+      jobMockRepo.findById.mockResolvedValue(mockJob);
+
+      userProfileMockrepo.findByUserId.mockResolvedValue(mockUserProfile);
+      // Arrange: mock repo create response
+      jobMatchMockRepo.create.mockResolvedValue({
+        id: "score-123",
+        jobId: mockJob.id,
+        userProfileId: "profile-123",
+        fitScore: 75,
+        explanation: ["some explanation"],
+      });
+
+      // Act: call the service method
+      const result = await jobService.createFitScore("job-123", "user-123");
+
+      expect(mockLLMService.getJobMatchScore).toHaveBeenCalledTimes(1);
+
+      expect(jobMatchMockRepo.create).toHaveBeenCalledTimes(1);
+
+      expect(result).toEqual({
+        id: "score-123",
+        jobId: "job-123",
+        userProfileId: "profile-123",
+        fitScore: 75,
+        explanation: ["some explanation"],
+      });
+    });
+
+    it("should throw DatabaseError if JobMatchRepo.create fails", async () => {
+      mockLLMService.getJobMatchScore.mockResolvedValue({
+        fitScore: 80,
+        explanation: ["good fit"],
+      });
+      jobMockRepo.findById.mockResolvedValue(mockJob);
+
+      userProfileMockrepo.findByUserId.mockResolvedValue(mockUserProfile);
+      jobMatchMockRepo.create.mockRejectedValue(
+        new DatabaseError(new Error("DB failed"), "Error creating fit score")
+      );
+
+      await expect(
+        jobService.createFitScore("job-123", "user-123")
+      ).rejects.toBeInstanceOf(DatabaseError);
+    });
+
+    it("should throw NotFoundError if job dont exists", async () => {
+      jobMockRepo.findById.mockResolvedValue(null);
+
+      await expect(
+        jobService.getJobById("non-existent-id", "user-123")
+      ).rejects.toBeInstanceOf(NotFoundError);
     });
   });
 });
