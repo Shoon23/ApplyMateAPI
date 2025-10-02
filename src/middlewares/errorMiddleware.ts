@@ -4,7 +4,7 @@ import logger from "../utils/logger";
 import config from "../config";
 
 const errorMiddleware: ErrorRequestHandler = (err, req, res, next) => {
-  logger.error(err.stack);
+  logger.error(err);
   // logger.error(err, {
   //   ...(config.NODE_ENV === "development" && {
   //     stack: err.stack,

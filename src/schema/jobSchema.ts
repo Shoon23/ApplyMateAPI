@@ -38,7 +38,15 @@ export const JobApplicationSchema = Joi.object({
   contactName: Joi.string().max(100).allow(null, "").messages({
     "string.max": "Contact name must be less than or equal to 100 characters",
   }),
+  description: Joi.string().allow(null, "").messages({
+    "string.base": "Description must be a text",
+    "string.empty": "Description cannot be empty",
+  }),
 
+  salary: Joi.number().allow(null, 0).messages({
+    "number.base": "Salary must be a number",
+    "number.min": "Salary cannot be less than 0",
+  }),
   contactEmail: Joi.string()
     .email({ tlds: { allow: false } })
     .allow(null, "")
@@ -113,7 +121,15 @@ export const UpdateJobApplicationSchema = Joi.object({
   contactName: Joi.string().max(100).allow(null, "").messages({
     "string.max": "Contact name must be less than or equal to 100 characters",
   }),
+  description: Joi.string().allow(null, "").messages({
+    "string.base": "Description must be a text",
+    "string.empty": "Description cannot be empty",
+  }),
 
+  salary: Joi.number().allow(null, 0).messages({
+    "number.base": "Salary must be a number",
+    "number.min": "Salary cannot be less than 0",
+  }),
   contactEmail: Joi.string()
     .email({ tlds: { allow: false } })
     .allow(null, "")

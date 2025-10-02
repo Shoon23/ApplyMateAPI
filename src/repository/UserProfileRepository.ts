@@ -48,46 +48,62 @@ class UserProfileRepostory extends BaseRepository {
       this.handleError(error, "Failed to find user profile");
     }
   }
-  async findByUserId(userId: string) {
+  async findByUserId(
+    userId: string,
+    includeOptions?: {
+      contact?: boolean;
+      skills?: boolean;
+      experience?: boolean;
+      education?: boolean;
+    }
+  ) {
     try {
       return await this.prisma.userProfile.findUnique({
         where: {
           userId,
         },
         include: {
-          contact: {
-            select: {
-              email: true,
-              id: true,
-              linkedin: true,
-              name: true,
-              phone: true,
-            },
-          },
-          skills: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
-          experience: {
-            select: {
-              achievements: true,
-              company: true,
-              endDate: true,
-              id: true,
-              role: true,
-              startDate: true,
-            },
-          },
-          education: {
-            select: {
-              degree: true,
-              id: true,
-              institution: true,
-              year: true,
-            },
-          },
+          contact: includeOptions?.contact
+            ? {
+                select: {
+                  email: true,
+                  id: true,
+                  linkedin: true,
+                  name: true,
+                  phone: true,
+                },
+              }
+            : false,
+          skills: includeOptions?.skills
+            ? {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              }
+            : false,
+          experience: includeOptions?.experience
+            ? {
+                select: {
+                  achievements: true,
+                  company: true,
+                  endDate: true,
+                  id: true,
+                  role: true,
+                  startDate: true,
+                },
+              }
+            : false,
+          education: includeOptions?.education
+            ? {
+                select: {
+                  degree: true,
+                  id: true,
+                  institution: true,
+                  year: true,
+                },
+              }
+            : false,
         },
       });
     } catch (error) {

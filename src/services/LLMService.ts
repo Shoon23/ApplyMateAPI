@@ -2,6 +2,7 @@ import { GoogleGenAI } from "@google/genai";
 import LLMExtractionError from "../errors/LLMExtractionError";
 import UserMapper from "../mapppers/user.mapper";
 import logger from "../utils/logger";
+import JobMapper from "../mapppers/job.mapper";
 class LLMService {
   private genAI: GoogleGenAI;
   private model = "gemini-2.5-flash";
@@ -84,17 +85,10 @@ JSON string Schema:
     let raw: any;
 
     try {
-      const response = await this.genAI.models.generateContent({
-        model: this.model,
-        config: {
-          thinkingConfig: { thinkingBudget: 0 },
-          systemInstruction: [{ text: systemInstruction }],
-        },
-        contents: text,
-      });
+      const response = await this.generateContent(text, systemInstruction);
 
       const responseText = response.text as string;
-      const cleanedText = responseText.replace(/^```json\s*|\s*```$/g, "");
+      const cleanedText = this.cleanOutput(responseText);
       raw = JSON.parse(cleanedText);
     } catch (err) {
       logger.error("LLM extraction failed", { error: err });
@@ -111,6 +105,59 @@ JSON string Schema:
     }
     logger.info("LLM extraction successful");
     return UserMapper.toExtractedUserProfileDTO(raw);
+  }
+
+  async getJobMatchScore(userProfile: string, jobDescription: string) {
+    const content = `You are an AI assistant that evaluates how well a candidate’s profile fits a specific job posting.
+
+### Candidate Profile
+${userProfile}
+
+### Job Description
+${jobDescription}
+
+### Instructions
+1. Compare the candidate’s profile against the job description.
+2. Provide a **fit score from 0 to 100** (integer only).
+3. Explain the reasoning in 2–4 bullet points.
+4. Respond ONLY in **valid JSON** following the schema below.
+
+### JSON Schema
+{
+  "fitScore": number,              // integer between 0-100
+  "explanation": [string, ...]     // array of 2–4 bullet points
+}`;
+
+    try {
+      const response = await this.generateContent(content);
+
+      const responseText = response.text as string;
+      const cleanedText = this.cleanOutput(responseText);
+      return JobMapper.toGeneratedJobScore(JSON.parse(cleanedText));
+    } catch (error) {
+      logger.error("LLM failed on generating score", { error: error });
+
+      throw new LLMExtractionError("failed on generating score", "file");
+    }
+  }
+
+  private async generateContent(contents: string, systemInstruction?: string) {
+    const response = await this.genAI.models.generateContent({
+      model: this.model,
+      config: {
+        thinkingConfig: { thinkingBudget: 0 },
+        ...(systemInstruction
+          ? { systemInstruction: [{ text: systemInstruction }] }
+          : {}),
+      },
+      contents: contents,
+    });
+
+    return response;
+  }
+
+  private cleanOutput(text: string) {
+    return text.replace(/^```json\s*|\s*```$/g, "");
   }
 }
 

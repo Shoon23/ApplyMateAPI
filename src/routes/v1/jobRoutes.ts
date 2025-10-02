@@ -11,11 +11,16 @@ import {
 } from "../../schema/jobSchema";
 import { validateReqParam } from "../../middlewares/validateReqParam";
 import { validateReqQuery } from "../../middlewares/validateReqQuery";
-
+import LLMService from "../../services/LLMService";
+import UserProfileRepostory from "../../repository/UserProfileRepository";
+import config from "../../config";
 const jobRoutes = Router();
 
+const llmService = new LLMService(config.GEMINI_API_KEY as string);
+const userProfileRepo = new UserProfileRepostory();
+
 const jobRepo = new JobRepository();
-const jobService = new JobService(jobRepo);
+const jobService = new JobService(jobRepo, userProfileRepo, llmService);
 const jobController = new JobController(jobService);
 // GET /jobs → list all jobs
 jobRoutes.get(

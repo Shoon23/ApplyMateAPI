@@ -1,20 +1,13 @@
 import { Status } from "../../generated/prisma";
 
-export type JobDTO = {
+export interface JobDTO extends CreateJobDTO {
   id: string;
-  company: string;
-  position: string;
-  source: string | null;
-  status: Status;
-  appliedDate: Date | null;
-  deadline: Date | null;
-  contactName: string | null;
-  contactEmail: string | null;
   userId: string;
   createdAt: Date;
   updatedAt: Date;
-};
-export type CreateJobDTO = {
+  jobEvaluation?: GeneratedJobScoreDTO;
+}
+export interface CreateJobDTO {
   company: string;
   position: string;
   source?: string | null;
@@ -23,7 +16,26 @@ export type CreateJobDTO = {
   deadline?: Date | null;
   contactName?: string | null;
   contactEmail?: string | null;
-};
+  description?: string | null;
+  salary?: number | null;
+}
+export interface CreateJobWithScoreDTO {
+  company: string;
+  position: string;
+  source?: string | null;
+  status: Status;
+  appliedDate?: Date | null;
+  deadline?: Date | null;
+  contactName?: string | null;
+  contactEmail?: string | null;
+  description?: string | null;
+  salary?: number | null;
+  jobEvaluation?: GeneratedJobScoreDTO;
+}
+export interface GeneratedJobScoreDTO {
+  fitScore: number;
+  explanation: string[];
+}
 
 export type UpdateJobDTO = Partial<CreateJobDTO>;
 // Query

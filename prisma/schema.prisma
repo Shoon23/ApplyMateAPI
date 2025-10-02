@@ -22,6 +22,7 @@ model User {
   password String
   jobs JobApplication[]
   profile UserProfile?
+  generatedResumes GeneratedResume[]
   createdAt DateTime @default(now())
 }
 model UserProfile {
@@ -32,6 +33,7 @@ model UserProfile {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
+  jobMatchScore JobMatchScore[]
   contact    Contact?
   skills     Skill[]
   experience Experience[]
@@ -85,30 +87,39 @@ model JobApplication {
   deadline DateTime?
   contactName String?
   contactEmail String?
+  salary Int?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   userId String
   user User @relation(fields: [userId],references: [id])
-  notes Notes[]
-  description Description?
+  notes String? @db.Text()
+  description String? @db.Text()
+  jobMatchScore JobMatchScore[]
+  generatedResume GeneratedResume[]
 }
-
-
-model Description {
+model JobMatchScore {
   id String @id @default(uuid())
-  description String?
-  jobId String @unique
-  job JobApplication @relation(fields: [jobId],references: [id])
-}
-
-model Notes {
-  id String @id @default(uuid())
-  notes String
-  createdAt DateTime @default(now())
-  jobs JobApplication @relation(fields: [jobId],references: [id])
+  userProfile  UserProfile @relation(fields: [userProfileId], references: [id])
+  userProfileId String
+  jobApplication   JobApplication @relation(fields: [jobId], references: [id])
   jobId String
+  fitScore     Float    
+  explanation  Json
 
 }
+model GeneratedResume {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  jobId     String? 
+  job       JobApplication? @relation(fields: [jobId], references: [id])
+  fitScore  Float?
+  content   Json     
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+
 
 enum Status {
   WISHLIST

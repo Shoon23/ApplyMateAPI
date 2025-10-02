@@ -1,5 +1,9 @@
-import { Status } from "../../generated/prisma";
-import { CreateJobDTO, FindAllJobsDTO } from "../dto/job.dto";
+import { Prisma, Status } from "../../generated/prisma";
+import {
+  CreateJobDTO,
+  CreateJobWithScoreDTO,
+  FindAllJobsDTO,
+} from "../dto/job.dto";
 import NotFoundError from "../errors/NotFoundError";
 import {
   JobApplicationType,
@@ -8,7 +12,6 @@ import {
 import { WithUserId } from "../types/common";
 import logger from "../utils/logger";
 import BaseRepository from "./BaseRepository";
-export type CreateJobType = JobApplicationType & { userId: string };
 
 class JobRepository extends BaseRepository {
   async findAll(params: FindAllJobsDTO) {
@@ -42,6 +45,9 @@ class JobRepository extends BaseRepository {
           skip,
           take: limit,
           orderBy,
+          include: {
+            jobMatchScore: true,
+          },
         }),
         this.prisma.jobApplication.count({ where }),
       ]);
@@ -67,6 +73,9 @@ class JobRepository extends BaseRepository {
           id,
           userId,
         },
+        include: {
+          jobMatchScore: true,
+        },
       });
     } catch (error) {
       this.handleError(error, "Failed to find job application");
@@ -82,7 +91,31 @@ class JobRepository extends BaseRepository {
       this.handleError(error, "Failed to create job application");
     }
   }
-
+  async createWithJobScore(
+    profileId: string,
+    data: WithUserId<CreateJobWithScoreDTO>
+  ) {
+    try {
+      const { jobEvaluation, ...other } = data;
+      return await this.prisma.jobApplication.create({
+        data: {
+          ...other,
+          jobMatchScore: {
+            create: {
+              explanation: jobEvaluation?.explanation ?? [],
+              fitScore: jobEvaluation?.fitScore ?? 0,
+              userProfileId: profileId,
+            },
+          },
+        },
+        include: {
+          jobMatchScore: true,
+        },
+      });
+    } catch (error) {
+      this.handleError(error, "Failed to create job application");
+    }
+  }
   async update(
     data: UpdateJobApplicationType & { id: string; userId: string }
   ) {

@@ -2,11 +2,12 @@ import {
   JobApplicationType,
   UpdateJobApplicationType,
 } from "../schema/jobSchema";
-import JobRepository, { CreateJobType } from "../repository/JobRepository";
+import JobRepository from "../repository/JobRepository";
 import logger from "../utils/logger";
 import NotFoundError from "../errors/NotFoundError";
 import {
   CreateJobDTO,
+  GeneratedJobScoreDTO,
   JobFiltersDTO,
   JobQueryDTO,
   PaginatedJobsDTO,
@@ -14,9 +15,17 @@ import {
 } from "../dto/job.dto";
 import { WithIdAndUser, WithUserId } from "../types/common";
 import JobMapper from "../mapppers/job.mapper";
+import UserRepository from "../repository/UserRepository";
+import UserProfileRepostory from "../repository/UserProfileRepository";
+import LLMService from "./LLMService";
+import UserMapper from "../mapppers/user.mapper";
 
 class JobService {
-  constructor(private jobRepo: JobRepository) {}
+  constructor(
+    private jobRepo: JobRepository,
+    private userProfileRepo: UserProfileRepostory,
+    private llmService: LLMService
+  ) {}
 
   async createJobApplication(data: WithUserId<CreateJobDTO>) {
     logger.info("Creating job application", {
@@ -30,17 +39,42 @@ class JobService {
       contactEmail: data.contactEmail?.trim() === "" ? null : data.contactEmail,
       source: data.source?.trim() === "" ? null : data.source,
     };
-    const jobData = await this.jobRepo.create(normalizedData);
+
+    const userProfile = await this.userProfileRepo.findByUserId(data.userId, {
+      education: true,
+      experience: true,
+      skills: true,
+    });
+    let jobData: any;
+    if (normalizedData.description && userProfile) {
+      const cleanProfile = UserMapper.toExtractedUserProfileDTO(userProfile);
+      const generatedScore = await this.llmService.getJobMatchScore(
+        JSON.stringify(cleanProfile),
+        normalizedData.description
+      );
+
+      console.log(generatedScore);
+
+      jobData = await this.jobRepo.createWithJobScore(userProfile.id, {
+        ...normalizedData,
+        jobEvaluation: generatedScore,
+      });
+    } else {
+      jobData = await this.jobRepo.create(normalizedData);
+    }
+
+    console.log(jobData);
     logger.info("Job application created successfully", {
       jobId: jobData.id,
       userId: jobData.userId,
     });
-    return JobMapper.toJobDTO(jobData);
+
+    return jobData;
+    // return JobMapper.toJobDTO(jobData);
   }
   async getJobById(id: string, userId: string) {
     logger.info("Fetching job application", { jobId: id, userId });
     const jobData = await this.jobRepo.findById(id, userId);
-
     if (!jobData) {
       logger.warn("Job application not found", { jobId: id, userId });
 

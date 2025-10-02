@@ -35,7 +35,12 @@ class UserService {
   }
 
   async getProfile(userId: string) {
-    const profileData = await this.userProfileRepo.findByUserId(userId);
+    const profileData = await this.userProfileRepo.findByUserId(userId, {
+      contact: true,
+      education: true,
+      experience: true,
+      skills: true,
+    });
 
     if (!profileData) {
       logger.warn("Profile Not Found", { userId });
