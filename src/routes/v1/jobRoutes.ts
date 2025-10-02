@@ -14,13 +14,19 @@ import { validateReqQuery } from "../../middlewares/validateReqQuery";
 import LLMService from "../../services/LLMService";
 import UserProfileRepostory from "../../repository/UserProfileRepository";
 import config from "../../config";
+import JobMatchRepository from "../../repository/JobMatchRepository";
 const jobRoutes = Router();
 
 const llmService = new LLMService(config.GEMINI_API_KEY as string);
 const userProfileRepo = new UserProfileRepostory();
-
+const jobMatchRepo = new JobMatchRepository();
 const jobRepo = new JobRepository();
-const jobService = new JobService(jobRepo, userProfileRepo, llmService);
+const jobService = new JobService(
+  jobRepo,
+  userProfileRepo,
+  llmService,
+  jobMatchRepo
+);
 const jobController = new JobController(jobService);
 // GET /jobs → list all jobs
 jobRoutes.get(
@@ -56,6 +62,12 @@ jobRoutes.delete(
   "/:id",
   validateReqParam(JobApplicationID),
   jobController.handleDeleteJob
+);
+
+jobRoutes.post(
+  "/fitScore/:id",
+  validateReqParam(JobApplicationID),
+  jobController.handleCreateFitScore
 );
 
 export default jobRoutes;

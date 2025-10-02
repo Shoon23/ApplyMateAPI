@@ -63,6 +63,15 @@ class JobController extends BaseController {
       data: deletedJob,
     });
   };
+
+  handleCreateFitScore = async (req: AuthRequest, res: Response) => {
+    const user = this.requireAuth(req);
+    const jobId = req.params.id;
+
+    const fitScore = await this.jobService.createFitScore(jobId, user.userId);
+
+    res.status(200).json(fitScore);
+  };
 }
 
 export default JobController;

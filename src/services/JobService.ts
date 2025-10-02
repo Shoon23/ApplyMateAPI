@@ -19,12 +19,14 @@ import UserRepository from "../repository/UserRepository";
 import UserProfileRepostory from "../repository/UserProfileRepository";
 import LLMService from "./LLMService";
 import UserMapper from "../mapppers/user.mapper";
+import JobMatchRepository from "../repository/JobMatchRepository";
 
 class JobService {
   constructor(
     private jobRepo: JobRepository,
     private userProfileRepo: UserProfileRepostory,
-    private llmService: LLMService
+    private llmService: LLMService,
+    private jobMatchRepo: JobMatchRepository
   ) {}
 
   async createJobApplication(data: WithUserId<CreateJobDTO>) {
@@ -69,8 +71,8 @@ class JobService {
       userId: jobData.userId,
     });
 
-    return jobData;
-    // return JobMapper.toJobDTO(jobData);
+    // return jobData;
+    return JobMapper.toJobDTO(jobData);
   }
   async getJobById(id: string, userId: string) {
     logger.info("Fetching job application", { jobId: id, userId });
@@ -148,6 +150,50 @@ class JobService {
       userId: userId,
     });
     return deletedJob;
+  }
+
+  async createFitScore(id: string, userId: string) {
+    logger.info("Creating Job Fit Score", { id, userId });
+
+    const job = await this.jobRepo.findById(id, userId);
+    if (!job) {
+      logger.warn("Job Not Found", { id });
+      throw new NotFoundError({
+        message: "Job Not Found",
+        property: "id",
+      });
+    }
+
+    if (!job.description) {
+      logger.warn("Job Not Found", { id });
+      throw new NotFoundError({
+        message: "Job Not Found",
+        property: "id",
+      });
+    }
+
+    const profile = await this.userProfileRepo.findByUserId(userId);
+    if (!profile) {
+      logger.warn("Profile Not Found", { userId });
+      throw new NotFoundError({
+        message: "Profile Not Found",
+        property: "id",
+      });
+    }
+
+    const cleanProfile = UserMapper.toExtractedUserProfileDTO(profile);
+    const fitScore = await this.llmService.getJobMatchScore(
+      JSON.stringify(cleanProfile),
+      job.description
+    );
+
+    const savedScore = await this.jobMatchRepo.create(
+      job.id,
+      profile.id,
+      fitScore
+    );
+
+    return savedScore;
   }
 }
 
